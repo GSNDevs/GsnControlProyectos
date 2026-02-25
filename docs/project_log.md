@@ -1,0 +1,31 @@
+- [x] **Project Details**:
+    - [x] Routing `/projects/:id` configured.
+    - [x] Detail Screen with Tabs (Overview, Tasks, Inventory, Files).
+    - [x] Dynamic Progress Bar and Status Chips.
+    - [x] Type-specific fields display (Address/Repo).
+    - [x] **Milestones & Tasks Tab**:
+        - [x] List of Iterations (Sprints/Phases).
+        - [x] Task list per iteration with Checkbox.
+        - [x] "Approve Phase" button logic (Mock).
+    - [x] **Inventory Tab**:
+        - [x] List of assigned products with lookup.
+        - [x] Actions: Return to warehouse, Report damage.
+- [x] **Authentication**:
+    - [x] Implemented `AuthProvider` (Mock).
+    - [x] Created `LoginScreen` with GSN Branding.
+    - [x] Configured `GoRouter` redirection logic.
+    - [x] Added "Cerrar Sesión" in Sidebar.
+- [x] **Supabase Integration**:
+    - [x] Created `lib/services` for all entities (Projects, Inventory, Profiles, Tasks, Iterations).
+    - [x] Updated Riverpod providers to use real Supabase endpoints.
+    - [x] Refactored data models to match final database schema.
+    - [x] Built Project Cloning / Template system (duplicate structure and phases).
+- [x] **UI/UX Premium Redesign**:
+    - [x] Implemented global design system con gradientes, sombras suaves y botones de acción principal.
+    - [x] **Pestaña de Cobros** (Facturación): Rediseñada para mantener un historial listado dinámico manejado por el modelo `ProjectPayment`. Usa formato (CLP) sin decimales. Diferencia tipos de pago (único, suscripción, adicional).
+- [x] **Gestión Documental, Evidencias & Sprints**:
+    - [x] Migración SQL `05_billing_and_descriptions.sql` aplicada paramúltiples detalles.
+    - [x] Se añadió el campo `description` en dialogos de Nueva Fase y Tarea.
+    - [x] Nuevo modelo y servicio `TaskDocument` (`task_documents` table) y ventana de Detalle de Tarea para añadir infinitos archivos como evidencia mediante un popup.
+    - [x] Lógica de edición de cantidad agregada a `_InventoryTab` (Botón "Editar Cantidad").
+    - [x] Compresión a WebP mediante `flutter_image_compress` configurada en `ImageHelper`.

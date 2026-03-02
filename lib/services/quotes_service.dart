@@ -31,6 +31,14 @@ class QuotesService {
     await _client.from(_tableName).insert(quoteData);
   }
 
+  /// Update the status of a quote
+  Future<void> updateQuoteStatus(String quoteId, String newStatus) async {
+    await _client
+        .from(_tableName)
+        .update({'status': newStatus})
+        .eq('id', quoteId);
+  }
+
   /// Upload a document to the quotes bucket and return its public URL
   Future<String> uploadQuoteDocument(
     String clientId,

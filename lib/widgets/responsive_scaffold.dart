@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:gsn_control_de_proyectos/utils/app_colors.dart';
 import 'package:gsn_control_de_proyectos/providers/auth_provider.dart';
+import 'package:gsn_control_de_proyectos/providers/providers.dart';
 
 class ResponsiveScaffold extends ConsumerStatefulWidget {
   final Widget child;
@@ -32,6 +33,12 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 800;
     final user = ref.watch(authProvider);
+
+    final quotesAsync = ref.watch(allQuotesProvider);
+    final pendingQuotesCount = quotesAsync.maybeWhen(
+      data: (quotes) => quotes.where((q) => q.status == 'recibida').length,
+      orElse: () => 0,
+    );
 
     if (!isDesktop) {
       return Scaffold(
@@ -124,6 +131,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                         label: "Cotizaciones",
                         isOpen: _isSidebarOpen,
                         route: '/quotes',
+                        notificationCount: pendingQuotesCount,
                       ),
                       _SidebarItem(
                         icon: Icons.settings_rounded,
@@ -376,12 +384,14 @@ class _SidebarItem extends StatelessWidget {
   final String label;
   final bool isOpen;
   final String route;
+  final int notificationCount;
 
   const _SidebarItem({
     required this.icon,
     required this.label,
     required this.isOpen,
     required this.route,
+    this.notificationCount = 0,
   });
 
   @override
@@ -439,6 +449,30 @@ class _SidebarItem extends StatelessWidget {
                     fontSize: 15,
                   ),
                 ),
+                if (notificationCount > 0) ...[
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.error,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      notificationCount > 99
+                          ? '99+'
+                          : notificationCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
               ],
             ],
           ),

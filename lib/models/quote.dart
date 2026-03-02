@@ -10,6 +10,7 @@ class Quote {
   final String? hasCurrentSystem;
   final String? isReplacement;
   final List<String> documentsUrls;
+  final String status;
   final DateTime createdAt;
 
   Quote({
@@ -24,6 +25,7 @@ class Quote {
     this.hasCurrentSystem,
     this.isReplacement,
     this.documentsUrls = const [],
+    required this.status,
     required this.createdAt,
   });
 
@@ -42,6 +44,7 @@ class Quote {
       documentsUrls: json['documents_urls'] != null
           ? List<String>.from(json['documents_urls'] as List)
           : [],
+      status: json['status'] as String? ?? 'recibida',
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
@@ -59,6 +62,7 @@ class Quote {
       'has_current_system': hasCurrentSystem,
       'is_replacement': isReplacement,
       'documents_urls': documentsUrls,
+      'status': status,
       'created_at': createdAt.toIso8601String(),
     };
   }

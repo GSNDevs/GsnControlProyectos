@@ -643,6 +643,19 @@ class QuotesController {
     }
   }
 
+  Future<void> updateQuoteStatus(
+    String quoteId,
+    String newStatus,
+    String clientId,
+  ) async {
+    final service = ref.read(quotesServiceProvider);
+    await service.updateQuoteStatus(quoteId, newStatus);
+
+    // Invalidate lists to refresh UI
+    ref.invalidate(allQuotesProvider);
+    ref.invalidate(clientQuotesProvider(clientId));
+  }
+
   Future<String> uploadDocument(
     String clientId,
     Uint8List fileBytes,

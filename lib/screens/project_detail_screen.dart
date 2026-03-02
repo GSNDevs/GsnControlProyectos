@@ -44,12 +44,14 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                 Tab(text: "Detalles"),
                 Tab(text: "Hitos y Tareas"),
                 Tab(text: "Notif. & Aprobaciones"),
+                Tab(text: "Informes de Avance"),
               ]
             : const [
                 Tab(text: "Detalles"),
                 Tab(text: "Hitos y Tareas"),
                 Tab(text: "Inventario Asignado"),
                 Tab(text: "Archivos"),
+                Tab(text: "Informes de Avance"),
                 Tab(text: "Cobros"),
               ];
 
@@ -58,12 +60,14 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                 _OverviewTab(project: project),
                 _ClientMilestonesTab(project: project),
                 _ClientNotificationsTab(project: project),
+                _ReportsTab(project: project, isClient: true),
               ]
             : [
                 _OverviewTab(project: project),
                 _MilestonesTab(project: project),
                 _InventoryTab(projectId: project.id),
                 _DocumentsTab(project: project),
+                _ReportsTab(project: project, isClient: false),
                 _BillingTab(project: project),
               ];
 
@@ -2319,42 +2323,94 @@ class _DocumentsTab extends ConsumerWidget {
 
   void _showLinkDriveDialog(BuildContext context, WidgetRef ref) {
     final urlCtrl = TextEditingController(text: project.driveFolderUrl ?? '');
+    String selectedType = 'project'; // 'project' or 'reports'
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Vincular Carpeta de Google Drive"),
-        content: TextField(
-          controller: urlCtrl,
-          decoration: const InputDecoration(
-            labelText: "URL de la carpeta",
-            border: OutlineInputBorder(),
-            hintText: "https://drive.google.com/drive/folders/...",
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancelar"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final url = urlCtrl.text.trim();
-              if (url.isNotEmpty) {
-                ref.read(projectsControllerProvider).updateProject(project.id, {
-                  'drive_folder_url': url,
-                });
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Carpeta vinculada correctamente.'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text("Vincular Carpeta de Google Drive"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: selectedType,
+                  decoration: const InputDecoration(
+                    labelText: "Tipo de Carpeta",
+                    border: OutlineInputBorder(),
                   ),
-                );
-              }
-            },
-            child: const Text("Guardar"),
-          ),
-        ],
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'project',
+                      child: Text("Archivos del Proyecto"),
+                    ),
+                    DropdownMenuItem(
+                      value: 'reports',
+                      child: Text("Informes de Avance"),
+                    ),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        selectedType = val;
+                        // Pre-fill corresponding existing URL if it exists
+                        if (selectedType == 'project') {
+                          urlCtrl.text = project.driveFolderUrl ?? '';
+                        } else {
+                          urlCtrl.text = project.reportsDriveUrl ?? '';
+                        }
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: urlCtrl,
+                  decoration: const InputDecoration(
+                    labelText: "URL de la carpeta",
+                    border: OutlineInputBorder(),
+                    hintText: "https://drive.google.com/drive/folders/...",
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancelar"),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final url = urlCtrl.text.trim();
+                  if (url.isNotEmpty) {
+                    // Decide which field to update
+                    final field = selectedType == 'project'
+                        ? 'drive_folder_url'
+                        : 'reports_drive_url';
+
+                    ref.read(projectsControllerProvider).updateProject(
+                      project.id,
+                      {field: url},
+                    );
+
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          selectedType == 'project'
+                              ? 'Carpeta del proyecto vinculada correctamente.'
+                              : 'Carpeta de informes vinculada correctamente.',
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: const Text("Guardar"),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -2400,15 +2456,16 @@ class _DocumentsTab extends ConsumerWidget {
             if (hasDriveLink) ...[
               ElevatedButton.icon(
                 onPressed: () async {
-                  final uri = Uri.parse(project.driveFolderUrl!);
-                  if (await canLaunchUrl(uri)) {
+                  try {
+                    final urlStr = project.driveFolderUrl!.trim();
+                    final uri = Uri.parse(
+                      urlStr.startsWith('http') ? urlStr : 'https://$urlStr',
+                    );
                     await launchUrl(uri, mode: LaunchMode.externalApplication);
-                  } else {
+                  } catch (e) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('No se pudo abrir la URL.'),
-                        ),
+                        SnackBar(content: Text('Error al abrir URL: $e')),
                       );
                     }
                   }
@@ -2443,6 +2500,91 @@ class _DocumentsTab extends ConsumerWidget {
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.gsnBlue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReportsTab extends ConsumerWidget {
+  final Project project;
+  final bool isClient;
+  const _ReportsTab({required this.project, this.isClient = false});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasReportsLink =
+        project.reportsDriveUrl != null && project.reportsDriveUrl!.isNotEmpty;
+
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Icon(
+              Icons.analytics_outlined,
+              size: 80,
+              color: hasReportsLink
+                  ? AppColors.gsnBlue
+                  : AppColors.textSecondary,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              hasReportsLink
+                  ? "Informes de Avance"
+                  : (isClient
+                        ? "Aún no hay informes disponibles"
+                        : "Gestión de Informes"),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              hasReportsLink
+                  ? "Revisa los informes de avance de este proyecto almacenados en Google Drive."
+                  : (isClient
+                        ? "Tu ejecutivo subirá los informes de avance aquí pronto."
+                        : "Debes vincular la carpeta correspondiente de Informes desde la pestaña de Archivos para que el cliente pueda verlos."),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 32),
+            if (hasReportsLink) ...[
+              ElevatedButton.icon(
+                onPressed: () async {
+                  try {
+                    final urlStr = project.reportsDriveUrl!.trim();
+                    final uri = Uri.parse(
+                      urlStr.startsWith('http') ? urlStr : 'https://$urlStr',
+                    );
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error al abrir URL: $e')),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.open_in_browser, size: 24),
+                label: const Text(
+                  "Visualizar Informes (Drive)",
+                  style: TextStyle(fontSize: 16),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.success,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),

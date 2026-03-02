@@ -150,25 +150,32 @@ class _ClientQuotesScreenState extends ConsumerState<ClientQuotesScreen> {
                       ),
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getServiceTypeColor(
-                        quote.serviceType,
-                      ).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      _getServiceTypeName(quote.serviceType),
-                      style: TextStyle(
-                        color: _getServiceTypeColor(quote.serviceType),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getServiceTypeColor(
+                            quote.serviceType,
+                          ).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          _getServiceTypeName(quote.serviceType),
+                          style: TextStyle(
+                            color: _getServiceTypeColor(quote.serviceType),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      _getStatusBadge(quote.status),
+                    ],
                   ),
                 ],
               ),
@@ -241,6 +248,58 @@ class _ClientQuotesScreenState extends ConsumerState<ClientQuotesScreen> {
       default:
         return type;
     }
+  }
+
+  Widget _getStatusBadge(String status) {
+    Color color;
+    String label;
+
+    switch (status) {
+      case 'recibida':
+        color = Colors.blueGrey;
+        label = 'Recibida';
+        break;
+      case 'en_revision':
+        color = Colors.amber.shade800;
+        label = 'En Revisión';
+        break;
+      case 'pendiente':
+        color = const Color(0xFFF97316); // Orange
+        label = 'Pendiente Cliente';
+        break;
+      case 'aceptada':
+        color = AppColors.success;
+        label = 'Aceptada';
+        break;
+      case 'rechazada':
+        color = AppColors.error;
+        label = 'Rechazada';
+        break;
+      case 'expirada':
+        color = Colors.grey.shade600;
+        label = 'Expirada';
+        break;
+      default:
+        color = Colors.grey;
+        label = status;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
   }
 
   String _formatDate(DateTime date) {
@@ -379,6 +438,7 @@ class _NewQuoteDialogState extends ConsumerState<_NewQuoteDialog> {
             (_serviceType == 'Hardware' || _serviceType == 'Hybrid')
             ? _isReplacement
             : null,
+        'status': 'recibida',
         'documents_urls': uploadedUrls,
       });
 

@@ -79,6 +79,7 @@ class AdminQuotesScreen extends ConsumerWidget {
 
                               return _buildClientGroup(
                                 context,
+                                ref,
                                 profile,
                                 clientQuotes,
                               );
@@ -104,6 +105,7 @@ class AdminQuotesScreen extends ConsumerWidget {
 
   Widget _buildClientGroup(
     BuildContext context,
+    WidgetRef ref,
     Profile profile,
     List<Quote> quotes,
   ) {
@@ -146,14 +148,14 @@ class AdminQuotesScreen extends ConsumerWidget {
             ],
           ),
           children: quotes
-              .map((quote) => _buildQuoteCard(context, quote))
+              .map((quote) => _buildQuoteCard(context, ref, quote))
               .toList(),
         ),
       ),
     );
   }
 
-  Widget _buildQuoteCard(BuildContext context, Quote quote) {
+  Widget _buildQuoteCard(BuildContext context, WidgetRef ref, Quote quote) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       padding: const EdgeInsets.all(24),
@@ -196,6 +198,65 @@ class AdminQuotesScreen extends ConsumerWidget {
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Status Dropdown
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: DropdownButton<String>(
+                  value: quote.status,
+                  icon: const Icon(Icons.arrow_drop_down, size: 20),
+                  underline: const SizedBox(),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'recibida',
+                      child: Text('Nueva / Recibida'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'en_revision',
+                      child: Text('En Revisión'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'pendiente',
+                      child: Text('Pendiente'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'aceptada',
+                      child: Text('Aceptada'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'rechazada',
+                      child: Text('Rechazada'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'expirada',
+                      child: Text('Expirada'),
+                    ),
+                  ],
+                  onChanged: (newStatus) {
+                    if (newStatus != null && newStatus != quote.status) {
+                      ref
+                          .read(quotesControllerProvider)
+                          .updateQuoteStatus(
+                            quote.id,
+                            newStatus,
+                            quote.clientId,
+                          );
+                    }
+                  },
                 ),
               ),
             ],
@@ -243,7 +304,7 @@ class AdminQuotesScreen extends ConsumerWidget {
                 onPressed: () => _openWhatsApp(quote.phone),
                 icon: const Icon(Icons.chat, color: Colors.white),
                 label: const Text(
-                  'Responder WhatsApp',
+                  'Responder por WhatsApp',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -323,20 +384,96 @@ class AdminQuotesScreen extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('Documentos Adjuntos'),
         content: SizedBox(
-          width: 400,
-          child: ListView.builder(
+          width: 500,
+          child: GridView.builder(
             shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 1.2,
+            ),
             itemCount: urls.length,
             itemBuilder: (context, index) {
-              return ListTile(
-                leading: const Icon(Icons.download),
-                title: Text('Documento ${index + 1}'),
+              final url = urls[index];
+              final ext = url.split('.').last.toLowerCase().split('?').first;
+              final isImage = [
+                'jpg',
+                'jpeg',
+                'png',
+                'webp',
+                'gif',
+              ].contains(ext);
+
+              if (isImage) {
+                return InkWell(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => Dialog(
+                        backgroundColor: Colors.transparent,
+                        insetPadding: const EdgeInsets.all(16),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            InteractiveViewer(
+                              child: Image.network(url, fit: BoxFit.contain),
+                            ),
+                            Positioned(
+                              top: 16,
+                              right: 16,
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 32,
+                                ),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                  child: Card(
+                    clipBehavior: Clip.antiAlias,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Image.network(url, fit: BoxFit.cover),
+                  ),
+                );
+              }
+
+              // Non-image rendering
+              IconData iconData = Icons.insert_drive_file;
+              if (ext == 'pdf')
+                iconData = Icons.picture_as_pdf;
+              else if (['doc', 'docx'].contains(ext))
+                iconData = Icons.description;
+
+              return InkWell(
                 onTap: () async {
-                  final uri = Uri.parse(urls[index]);
-                  if (await canLaunchUrl(uri)) {
-                    await launchUrl(uri);
-                  }
+                  final uri = Uri.parse(url);
+                  if (await canLaunchUrl(uri)) await launchUrl(uri);
                 },
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(iconData, size: 48, color: AppColors.gsnBlue),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Doc ${index + 1} ($ext)',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
               );
             },
           ),

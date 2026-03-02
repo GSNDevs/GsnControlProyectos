@@ -19,6 +19,7 @@ class Project {
   final int progress;
   final bool isTemplate;
   final String? driveFolderUrl;
+  final String? reportsDriveUrl;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -40,6 +41,7 @@ class Project {
     this.progress = 0,
     this.isTemplate = false,
     this.driveFolderUrl,
+    this.reportsDriveUrl,
     this.createdAt,
     this.updatedAt,
     this.detailsPhysical,
@@ -61,6 +63,7 @@ class Project {
       progress: json['progress'] ?? 0,
       isTemplate: json['is_template'] ?? false,
       driveFolderUrl: json['drive_folder_url'],
+      reportsDriveUrl: json['reports_drive_url'],
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
@@ -90,6 +93,7 @@ class Project {
       'progress': progress,
       'is_template': isTemplate,
       'drive_folder_url': driveFolderUrl,
+      'reports_drive_url': reportsDriveUrl,
     };
   }
 

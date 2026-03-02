@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:gsn_control_de_proyectos/providers/providers.dart';
 import 'package:gsn_control_de_proyectos/utils/app_colors.dart';
 import 'package:gsn_control_de_proyectos/models/models.dart';
+import 'package:intl/intl.dart';
 // Reusing helpers from dashboard for now
 
 class ProjectsScreen extends ConsumerWidget {
@@ -145,7 +146,7 @@ class ProjectsScreen extends ConsumerWidget {
                                       decoration: BoxDecoration(
                                         color: _getTypeColor(
                                           project.type,
-                                        ).withOpacity(0.1),
+                                        ).withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Row(
@@ -171,9 +172,32 @@ class ProjectsScreen extends ConsumerWidget {
                                         ],
                                       ),
                                     ),
-                                    const Icon(
-                                      Icons.more_horiz_rounded,
-                                      color: AppColors.textSecondary,
+                                    PopupMenuButton<String>(
+                                      icon: const Icon(
+                                        Icons.more_horiz_rounded,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      itemBuilder: (context) => [
+                                        const PopupMenuItem(
+                                          value: 'edit',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.edit, size: 20),
+                                              SizedBox(width: 8),
+                                              Text("Editar Proyecto"),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                      onSelected: (value) {
+                                        if (value == 'edit') {
+                                          _showEditProjectDialog(
+                                            context,
+                                            ref,
+                                            project,
+                                          );
+                                        }
+                                      },
                                     ),
                                   ],
                                 ),
@@ -337,6 +361,7 @@ class ProjectsScreen extends ConsumerWidget {
     ProjectType selectedType = ProjectType.physical;
     String? selectedClientId;
     String? selectedTemplateId;
+    DateTime? selectedTentativeEndDate;
 
     showDialog(
       context: context,
@@ -445,6 +470,53 @@ class ProjectsScreen extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 16),
+                        InkWell(
+                          onTap: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate:
+                                  selectedTentativeEndDate ?? DateTime.now(),
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime(2050),
+                            );
+                            if (date != null) {
+                              setState(() => selectedTentativeEndDate = date);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[50],
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade400),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  selectedTentativeEndDate == null
+                                      ? "Fecha estimada de fin (Opcional)"
+                                      : "Fin estimado: ${DateFormat('dd/MM/yyyy').format(selectedTentativeEndDate!)}",
+                                  style: TextStyle(
+                                    color: selectedTentativeEndDate == null
+                                        ? Colors.grey.shade700
+                                        : AppColors.textPrimary,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.calendar_today,
+                                  color: AppColors.gsnBlue,
+                                  size: 20,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                         TextField(
                           controller: locationUrlCtrl,
                           decoration: InputDecoration(
@@ -492,7 +564,7 @@ class ProjectsScreen extends ConsumerWidget {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   );
-                                }).toList(),
+                                }),
                               ],
                               onChanged: (val) {
                                 setState(() => selectedTemplateId = val);
@@ -540,6 +612,8 @@ class ProjectsScreen extends ConsumerWidget {
                           'location_url': locationUrlCtrl.text.trim().isEmpty
                               ? null
                               : locationUrlCtrl.text.trim(),
+                          'tentative_end_date': selectedTentativeEndDate
+                              ?.toIso8601String(),
                           'created_at': DateTime.now().toIso8601String(),
                         };
 
@@ -567,6 +641,210 @@ class ProjectsScreen extends ConsumerWidget {
                 ],
               );
             },
+          );
+        },
+      ),
+    );
+  }
+
+  void _showEditProjectDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Project project,
+  ) {
+    final nameCtrl = TextEditingController(text: project.name);
+    final budgetCtrl = TextEditingController(
+      text: project.budgetTotal.toString(),
+    );
+    final locationUrlCtrl = TextEditingController(
+      text: project.locationUrl ?? '',
+    );
+    DateTime? selectedTentativeEndDate = project.tentativeEndDate;
+    ProjectStatus selectedStatus = project.status;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: const Text(
+              "Editar Proyecto",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: Container(
+              width: double.maxFinite,
+              constraints: const BoxConstraints(maxWidth: 500),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: InputDecoration(
+                        labelText: "Nombre del Proyecto",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<ProjectStatus>(
+                      initialValue: selectedStatus,
+                      decoration: InputDecoration(
+                        labelText: "Estado del Proyecto",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                      ),
+                      items: ProjectStatus.values.map((status) {
+                        return DropdownMenuItem(
+                          value: status,
+                          child: Text(_getStatusLabel(status)),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) setState(() => selectedStatus = val);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    InkWell(
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate:
+                              selectedTentativeEndDate ?? DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2050),
+                        );
+                        if (date != null) {
+                          setState(() => selectedTentativeEndDate = date);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade400),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              selectedTentativeEndDate == null
+                                  ? "Fecha estimada de fin (Opcional)"
+                                  : "Fin estimado: ${DateFormat('dd/MM/yyyy').format(selectedTentativeEndDate!)}",
+                              style: TextStyle(
+                                color: selectedTentativeEndDate == null
+                                    ? Colors.grey.shade700
+                                    : AppColors.textPrimary,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const Icon(
+                              Icons.calendar_today,
+                              color: AppColors.gsnBlue,
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: budgetCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: "Presupuesto Total",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: locationUrlCtrl,
+                      decoration: InputDecoration(
+                        labelText: "Enlace de Ubicación (Google Maps)",
+                        hintText: "Opcional",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  "Cancelar",
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: AppColors.softShadow,
+                ),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                  onPressed: () {
+                    if (nameCtrl.text.isEmpty) return;
+
+                    final updates = {
+                      'name': nameCtrl.text,
+                      'status': selectedStatus.name,
+                      'budget_total': double.tryParse(budgetCtrl.text) ?? 0,
+                      'location_url': locationUrlCtrl.text.trim().isEmpty
+                          ? null
+                          : locationUrlCtrl.text.trim(),
+                      'tentative_end_date': selectedTentativeEndDate
+                          ?.toIso8601String(),
+                      'updated_at': DateTime.now().toIso8601String(),
+                    };
+
+                    ref
+                        .read(projectsControllerProvider)
+                        .updateProject(project.id, updates);
+
+                    Navigator.pop(context);
+                  },
+                  child: const Text(
+                    "Guardar Cambios",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           );
         },
       ),

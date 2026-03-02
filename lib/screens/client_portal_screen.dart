@@ -5,6 +5,7 @@ import 'package:gsn_control_de_proyectos/models/models.dart';
 import 'package:gsn_control_de_proyectos/providers/auth_provider.dart';
 import 'package:gsn_control_de_proyectos/providers/providers.dart';
 import 'package:gsn_control_de_proyectos/utils/app_colors.dart';
+import 'package:intl/intl.dart';
 
 class ClientPortalScreen extends ConsumerWidget {
   const ClientPortalScreen({super.key});
@@ -229,6 +230,29 @@ class ClientPortalScreen extends ConsumerWidget {
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
                                           ),
+                                          if (project.tentativeEndDate !=
+                                              null) ...[
+                                            const SizedBox(height: 12),
+                                            Row(
+                                              children: [
+                                                const Icon(
+                                                  Icons.calendar_today,
+                                                  size: 14,
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                ),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  "Fin estimado: ${DateFormat('dd/MM/yyyy').format(project.tentativeEndDate!)}",
+                                                  style: const TextStyle(
+                                                    color:
+                                                        AppColors.textSecondary,
+                                                    fontSize: 13,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
                                           const Spacer(),
                                           Row(
                                             mainAxisAlignment:

@@ -3,6 +3,7 @@ import 'package:gsn_control_de_proyectos/models/project_details_software.dart';
 
 enum ProjectType { physical, software, hybrid }
 
+// ignore: constant_identifier_names
 enum ProjectStatus { planning, in_progress, blocked, completed }
 
 class Project {
@@ -21,6 +22,7 @@ class Project {
   final String? driveFolderUrl;
   final String? reportsDriveUrl;
   final String? locationUrl;
+  final DateTime? tentativeEndDate;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -44,6 +46,7 @@ class Project {
     this.driveFolderUrl,
     this.reportsDriveUrl,
     this.locationUrl,
+    this.tentativeEndDate,
     this.createdAt,
     this.updatedAt,
     this.detailsPhysical,
@@ -67,6 +70,9 @@ class Project {
       driveFolderUrl: json['drive_folder_url'],
       reportsDriveUrl: json['reports_drive_url'],
       locationUrl: json['location_url'],
+      tentativeEndDate: json['tentative_end_date'] != null
+          ? DateTime.parse(json['tentative_end_date'])
+          : null,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
@@ -98,6 +104,7 @@ class Project {
       'drive_folder_url': driveFolderUrl,
       'reports_drive_url': reportsDriveUrl,
       'location_url': locationUrl,
+      'tentative_end_date': tentativeEndDate?.toIso8601String(),
     };
   }
 

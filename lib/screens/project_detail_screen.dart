@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:gsn_control_de_proyectos/providers/auth_provider.dart';
+import 'package:gsn_control_de_proyectos/widgets/project_map_viewer.dart';
 
 class ProjectDetailScreen extends ConsumerStatefulWidget {
   final String projectId;
@@ -211,8 +212,9 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                                 final profilesAsync = ref.watch(
                                   profilesProvider,
                                 );
-                                if (project.clientId == null)
+                                if (project.clientId == null) {
                                   return const SizedBox();
+                                }
                                 return profilesAsync.maybeWhen(
                                   data: (profiles) {
                                     try {
@@ -454,6 +456,64 @@ class _OverviewTab extends ConsumerWidget {
                       ],
                     ),
                   ),
+                if (project.locationUrl != null &&
+                    project.locationUrl!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Ubicación Mapas",
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ProjectMapViewer(
+                          locationUrl: project.locationUrl!.trim(),
+                          height: 250,
+                        ),
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            try {
+                              final urlStr = project.locationUrl!.trim();
+                              final url = Uri.parse(
+                                urlStr.startsWith('http')
+                                    ? urlStr
+                                    : 'https://$urlStr',
+                              );
+                              await launchUrl(
+                                url,
+                                mode: LaunchMode.externalApplication,
+                              );
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error al abrir URL: $e'),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.open_in_new, size: 16),
+                          label: const Text("Abrir en otra pestaña"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: AppColors.gsnBlue,
+                            elevation: 0,
+                            side: const BorderSide(color: AppColors.gsnBlue),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
                 const Divider(height: 32),
                 const Text(
@@ -647,9 +707,12 @@ class _MilestonesTab extends ConsumerWidget {
           ),
           body: ListView.builder(
             padding: const EdgeInsets.all(24),
-            itemCount: iterations.length,
+            itemCount: iterations.length + 1,
             itemBuilder: (context, index) {
-              final iteration = iterations[index];
+              if (index == 0) {
+                return _ProjectTasksSummary(iterations: iterations);
+              }
+              final iteration = iterations[index - 1];
               final DateFormat dateFormat = DateFormat('dd/MM/yyyy');
 
               return Card(
@@ -664,7 +727,7 @@ class _MilestonesTab extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.gsnBlue.withOpacity(0.05),
+                        color: AppColors.gsnBlue.withValues(alpha: 0.05),
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(12),
                         ),
@@ -1092,6 +1155,98 @@ class _TasksList extends ConsumerWidget {
           },
         );
       },
+    );
+  }
+}
+
+class _ProjectTasksSummary extends ConsumerWidget {
+  final List<Iteration> iterations;
+
+  const _ProjectTasksSummary({required this.iterations});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (iterations.isEmpty) return const SizedBox.shrink();
+
+    // Use a Provider to aggregate tasks across iterations
+    final allTasksList = iterations.expand((iteration) {
+      final tasksAsync = ref.watch(tasksProvider(iteration.id));
+      return tasksAsync.value ?? [];
+    }).toList();
+
+    int total = allTasksList.length;
+    int todo = allTasksList.where((t) => t.status == TaskStatus.todo).length;
+    int doing = allTasksList.where((t) => t.status == TaskStatus.doing).length;
+    int done = allTasksList.where((t) => t.status == TaskStatus.done).length;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppColors.softShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Resumen General de Tareas",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _buildCounter("Total", total, Colors.blueGrey),
+              const SizedBox(width: 12),
+              _buildCounter("Por hacer", todo, Colors.grey),
+              const SizedBox(width: 12),
+              _buildCounter("En proceso", doing, AppColors.warning),
+              const SizedBox(width: 12),
+              _buildCounter("Completado", done, AppColors.success),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCounter(String label, int count, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          children: [
+            Text(
+              count.toString(),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color.withValues(alpha: 0.8),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -2335,7 +2490,7 @@ class _DocumentsTab extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<String>(
-                  value: selectedType,
+                  initialValue: selectedType,
                   decoration: const InputDecoration(
                     labelText: "Tipo de Carpeta",
                     border: OutlineInputBorder(),
@@ -2639,7 +2794,7 @@ class _BillingTabState extends ConsumerState<_BillingTab> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: selectedType,
+                    initialValue: selectedType,
                     decoration: const InputDecoration(
                       labelText: "Tipo de Cobro",
                       border: OutlineInputBorder(),
@@ -2748,7 +2903,7 @@ class _BillingTabState extends ConsumerState<_BillingTab> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: selectedType,
+                    initialValue: selectedType,
                     decoration: const InputDecoration(
                       labelText: "Tipo de Cobro",
                       border: OutlineInputBorder(),
@@ -3636,9 +3791,12 @@ class _ClientMilestonesTab extends ConsumerWidget {
           backgroundColor: Colors.transparent,
           body: ListView.builder(
             padding: const EdgeInsets.all(24),
-            itemCount: iterations.length,
+            itemCount: iterations.length + 1,
             itemBuilder: (context, index) {
-              final iteration = iterations[index];
+              if (index == 0) {
+                return _ProjectTasksSummary(iterations: iterations);
+              }
+              final iteration = iterations[index - 1];
               final DateFormat dateFormat = DateFormat('dd/MM/yyyy');
 
               return Card(
@@ -3653,7 +3811,7 @@ class _ClientMilestonesTab extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.gsnBlue.withOpacity(0.05),
+                        color: AppColors.gsnBlue.withValues(alpha: 0.05),
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(12),
                         ),

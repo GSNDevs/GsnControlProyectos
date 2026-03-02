@@ -333,6 +333,7 @@ class ProjectsScreen extends ConsumerWidget {
   void _showCreateProjectDialog(BuildContext context, WidgetRef ref) {
     final nameCtrl = TextEditingController();
     final budgetCtrl = TextEditingController();
+    final locationUrlCtrl = TextEditingController();
     ProjectType selectedType = ProjectType.physical;
     String? selectedClientId;
     String? selectedTemplateId;
@@ -444,6 +445,20 @@ class ProjectsScreen extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 16),
+                        TextField(
+                          controller: locationUrlCtrl,
+                          decoration: InputDecoration(
+                            labelText: "Enlace de Ubicación (Google Maps)",
+                            hintText:
+                                "Opcional. Ej: https://maps.app.goo.gl/...",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey[50],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                         // Existing Projects Template Dropdown
                         projectsAsync.when(
                           loading: () => const SizedBox(),
@@ -522,6 +537,9 @@ class ProjectsScreen extends ConsumerWidget {
                           'status': ProjectStatus.planning.name,
                           'budget_total': double.tryParse(budgetCtrl.text) ?? 0,
                           'progress': 0,
+                          'location_url': locationUrlCtrl.text.trim().isEmpty
+                              ? null
+                              : locationUrlCtrl.text.trim(),
                           'created_at': DateTime.now().toIso8601String(),
                         };
 

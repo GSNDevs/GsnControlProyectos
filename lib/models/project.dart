@@ -20,6 +20,7 @@ class Project {
   final bool isTemplate;
   final String? driveFolderUrl;
   final String? reportsDriveUrl;
+  final String? locationUrl;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -42,6 +43,7 @@ class Project {
     this.isTemplate = false,
     this.driveFolderUrl,
     this.reportsDriveUrl,
+    this.locationUrl,
     this.createdAt,
     this.updatedAt,
     this.detailsPhysical,
@@ -64,6 +66,7 @@ class Project {
       isTemplate: json['is_template'] ?? false,
       driveFolderUrl: json['drive_folder_url'],
       reportsDriveUrl: json['reports_drive_url'],
+      locationUrl: json['location_url'],
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
@@ -94,6 +97,7 @@ class Project {
       'is_template': isTemplate,
       'drive_folder_url': driveFolderUrl,
       'reports_drive_url': reportsDriveUrl,
+      'location_url': locationUrl,
     };
   }
 

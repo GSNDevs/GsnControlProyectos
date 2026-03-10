@@ -13,3 +13,5 @@ export 'task_document.dart';
 export 'project_payment.dart';
 export 'product_category.dart';
 export 'quote.dart';
+export 'project_member.dart';
+export 'user_document.dart';

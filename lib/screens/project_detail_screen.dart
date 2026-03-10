@@ -8,6 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:gsn_control_de_proyectos/providers/auth_provider.dart';
 import 'package:gsn_control_de_proyectos/widgets/project_map_viewer.dart';
+import 'package:gsn_control_de_proyectos/screens/widgets/project_team_tab.dart';
 
 class ProjectDetailScreen extends ConsumerStatefulWidget {
   final String projectId;
@@ -43,12 +44,14 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
         final tabs = isClient
             ? const [
                 Tab(text: "Detalles"),
+                Tab(text: "Equipo del Proyecto"),
                 Tab(text: "Hitos y Tareas"),
                 Tab(text: "Notif. & Aprobaciones"),
                 Tab(text: "Informes de Avance"),
               ]
             : const [
                 Tab(text: "Detalles"),
+                Tab(text: "Equipo del Proyecto"),
                 Tab(text: "Hitos y Tareas"),
                 Tab(text: "Inventario Asignado"),
                 Tab(text: "Archivos"),
@@ -59,12 +62,14 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
         final tabViews = isClient
             ? [
                 _OverviewTab(project: project),
+                ProjectTeamTab(project: project, isClient: true),
                 _ClientMilestonesTab(project: project),
                 _ClientNotificationsTab(project: project),
                 _ReportsTab(project: project, isClient: true),
               ]
             : [
                 _OverviewTab(project: project),
+                ProjectTeamTab(project: project, isClient: false),
                 _MilestonesTab(project: project),
                 _InventoryTab(projectId: project.id),
                 _DocumentsTab(project: project),
@@ -896,13 +901,13 @@ class _MilestonesTab extends ConsumerWidget {
                     ),
 
                     // Tasks List for this iteration
-                    _TasksList(iterationId: iteration.id),
+                    _TasksList(projectId: project.id, iterationId: iteration.id),
 
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: TextButton.icon(
                         onPressed: () =>
-                            _showCreateTaskDialog(context, ref, iteration.id),
+                            _showCreateTaskDialog(context, ref, project.id, iteration.id),
                         icon: const Icon(Icons.add),
                         label: const Text("Agregar Tarea"),
                       ),
@@ -919,8 +924,9 @@ class _MilestonesTab extends ConsumerWidget {
 }
 
 class _TasksList extends ConsumerWidget {
+  final String projectId;
   final String iterationId;
-  const _TasksList({required this.iterationId});
+  const _TasksList({required this.projectId, required this.iterationId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1068,6 +1074,7 @@ class _TasksList extends ConsumerWidget {
                                 onPressed: () => _showEditTaskAssigneesDialog(
                                   context,
                                   ref,
+                                  projectId,
                                   iterationId,
                                   task,
                                 ),
@@ -2169,6 +2176,7 @@ void _showEditIterationDialog(
 void _showEditTaskAssigneesDialog(
   BuildContext context,
   WidgetRef ref,
+  String projectId,
   String iterationId,
   Task task,
 ) {
@@ -2179,6 +2187,7 @@ void _showEditTaskAssigneesDialog(
     builder: (context) => Consumer(
       builder: (context, ref, _) {
         final profilesAsync = ref.watch(profilesProvider);
+        final membersAsync = ref.watch(projectMembersProvider(projectId));
 
         return StatefulBuilder(
           builder: (context, setState) {
@@ -2202,28 +2211,28 @@ void _showEditTaskAssigneesDialog(
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    profilesAsync.when(
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
-                      error: (err, stack) =>
-                          Text("Error al cargar usuarios: $err"),
-                      data: (profiles) {
-                        final staffUsers = profiles
-                            .where(
-                              (p) => p.role == 'admin' || p.role == 'staff',
-                            )
-                            .toList();
+                    if (profilesAsync.isLoading || membersAsync.isLoading)
+                      const Center(child: CircularProgressIndicator())
+                    else if (profilesAsync.hasError || membersAsync.hasError)
+                      const Text("Error al cargar usuarios asignables.")
+                    else ...[
+                      Builder(builder: (context) {
+                        final profiles = profilesAsync.value ?? [];
+                        final members = membersAsync.value ?? [];
+                        final activeProfileIds = members.where((m) => m.isActive).map((m) => m.profileId).toSet();
+                        
+                        final assignableUsers = profiles.where((p) => activeProfileIds.contains(p.id)).toList();
 
-                        if (staffUsers.isEmpty) {
+                        if (assignableUsers.isEmpty) {
                           return const Text(
-                            "No hay usuarios staff/admin disponibles.",
+                            "No hay usuarios asignados a este proyecto.",
                           );
                         }
 
                         return Wrap(
                           spacing: 8.0,
                           runSpacing: 4.0,
-                          children: staffUsers.map((user) {
+                          children: assignableUsers.map((user) {
                             final isSelected = selectedAssignees.contains(
                               user.id,
                             );
@@ -2248,8 +2257,8 @@ void _showEditTaskAssigneesDialog(
                             );
                           }).toList(),
                         );
-                      },
-                    ),
+                      }),
+                    ],
                   ],
                 ),
               ),
@@ -2307,6 +2316,7 @@ void _showEditTaskAssigneesDialog(
 void _showCreateTaskDialog(
   BuildContext context,
   WidgetRef ref,
+  String projectId,
   String iterationId,
 ) {
   final titleCtrl = TextEditingController();
@@ -2318,6 +2328,7 @@ void _showCreateTaskDialog(
     builder: (context) => Consumer(
       builder: (context, ref, _) {
         final profilesAsync = ref.watch(profilesProvider);
+        final membersAsync = ref.watch(projectMembersProvider(projectId));
 
         return StatefulBuilder(
           builder: (context, setState) {
@@ -2366,28 +2377,28 @@ void _showCreateTaskDialog(
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    profilesAsync.when(
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
-                      error: (err, stack) =>
-                          Text("Error al cargar usuarios: $err"),
-                      data: (profiles) {
-                        final staffUsers = profiles
-                            .where(
-                              (p) => p.role == 'admin' || p.role == 'staff',
-                            )
-                            .toList();
+                    if (profilesAsync.isLoading || membersAsync.isLoading)
+                      const Center(child: CircularProgressIndicator())
+                    else if (profilesAsync.hasError || membersAsync.hasError)
+                      const Text("Error al cargar usuarios asignables.")
+                    else ...[
+                      Builder(builder: (context) {
+                        final profiles = profilesAsync.value ?? [];
+                        final members = membersAsync.value ?? [];
+                        final activeProfileIds = members.where((m) => m.isActive).map((m) => m.profileId).toSet();
+                        
+                        final assignableUsers = profiles.where((p) => activeProfileIds.contains(p.id)).toList();
 
-                        if (staffUsers.isEmpty) {
+                        if (assignableUsers.isEmpty) {
                           return const Text(
-                            "No hay usuarios staff/admin disponibles.",
+                            "No hay usuarios asignados a este proyecto.",
                           );
                         }
 
                         return Wrap(
                           spacing: 8.0,
                           runSpacing: 4.0,
-                          children: staffUsers.map((user) {
+                          children: assignableUsers.map((user) {
                             final isSelected = selectedAssignees.contains(
                               user.id,
                             );
@@ -2412,8 +2423,8 @@ void _showCreateTaskDialog(
                             );
                           }).toList(),
                         );
-                      },
-                    ),
+                      }),
+                    ],
                   ],
                 ),
               ),

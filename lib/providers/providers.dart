@@ -665,3 +665,84 @@ class QuotesController {
     return await service.uploadQuoteDocument(clientId, fileBytes, fileName);
   }
 }
+
+// ----------------------------------------
+// PROJECT MEMBERS
+// ----------------------------------------
+
+final projectMembersProvider = FutureProvider.family<List<ProjectMember>, String>((ref, projectId) async {
+  final service = ref.watch(projectMembersServiceProvider);
+  final data = await service.getProjectMembers(projectId);
+  return data.map((e) => ProjectMember.fromJson(e)).toList();
+});
+
+final projectMembersControllerProvider = Provider((ref) => ProjectMembersController(ref));
+
+class ProjectMembersController {
+  final Ref ref;
+  ProjectMembersController(this.ref);
+
+  Future<void> addMember(String projectId, String profileId) async {
+    final service = ref.read(projectMembersServiceProvider);
+    await service.addProjectMember(projectId, profileId);
+    ref.invalidate(projectMembersProvider(projectId));
+  }
+
+  Future<void> removeMember(String projectId, String memberId) async {
+    final service = ref.read(projectMembersServiceProvider);
+    // Hard delete for simplicity, or soft delete if 'tasks' exist.
+    // We will handle soft delete within the UI calling logic or update method.
+    await service.removeProjectMember(memberId);
+    ref.invalidate(projectMembersProvider(projectId));
+  }
+
+  Future<void> updateMemberStatus(String projectId, String memberId, bool isActive) async {
+    final service = ref.read(projectMembersServiceProvider);
+    await service.updateProjectMember(memberId, {'is_active': isActive});
+    ref.invalidate(projectMembersProvider(projectId));
+  }
+}
+
+// ----------------------------------------
+// USER DOCUMENTS
+// ----------------------------------------
+
+final userDocumentsProvider = FutureProvider.family<List<UserDocument>, String>((ref, profileId) async {
+  final service = ref.watch(userDocumentsServiceProvider);
+  final data = await service.getUserDocuments(profileId);
+  return data.map((e) => UserDocument.fromJson(e)).toList();
+});
+
+final projectVisibleDocumentsProvider = FutureProvider.family<List<UserDocument>, String>((ref, projectId) async {
+  final service = ref.watch(userDocumentsServiceProvider);
+  final data = await service.getProjectVisibleDocuments(projectId);
+  return data.map((e) => UserDocument.fromJson(e)).toList();
+});
+
+final userDocumentsControllerProvider = Provider((ref) => UserDocumentsController(ref));
+
+class UserDocumentsController {
+  final Ref ref;
+  UserDocumentsController(this.ref);
+
+  Future<void> createDocument(String profileId, Map<String, dynamic> docData) async {
+    final service = ref.read(userDocumentsServiceProvider);
+    await service.createUserDocument(docData);
+    ref.invalidate(userDocumentsProvider(profileId));
+  }
+
+  Future<void> updateDocument(String profileId, String docId, Map<String, dynamic> updates) async {
+    final service = ref.read(userDocumentsServiceProvider);
+    await service.updateUserDocument(docId, updates);
+    ref.invalidate(userDocumentsProvider(profileId));
+  }
+
+  Future<void> deleteDocument(String profileId, String docId, {String? fileUrl}) async {
+    final service = ref.read(userDocumentsServiceProvider);
+    await service.deleteUserDocument(docId);
+    if (fileUrl != null) {
+      await service.deleteStorageDocument(fileUrl);
+    }
+    ref.invalidate(userDocumentsProvider(profileId));
+  }
+}

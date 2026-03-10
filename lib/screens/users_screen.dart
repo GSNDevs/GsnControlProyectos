@@ -97,6 +97,12 @@ class UsersScreen extends ConsumerWidget {
                           final admins = activeProfiles
                               .where((p) => p.role == 'admin')
                               .toList();
+                          final supervisors = activeProfiles
+                              .where((p) => p.role == 'supervisor')
+                              .toList();
+                          final developers = activeProfiles
+                              .where((p) => p.role == 'developer')
+                              .toList();
                           final staff = activeProfiles
                               .where((p) => p.role == 'staff')
                               .toList();
@@ -106,16 +112,19 @@ class UsersScreen extends ConsumerWidget {
 
                           if (isMobile) {
                             return DefaultTabController(
-                              length: 3,
+                              length: 5,
                               child: Column(
                                 children: [
                                   const TabBar(
+                                    isScrollable: true,
                                     labelColor: AppColors.gsnBlue,
                                     unselectedLabelColor:
                                         AppColors.textSecondary,
                                     indicatorColor: AppColors.gsnBlue,
                                     tabs: [
                                       Tab(text: "Admin"),
+                                      Tab(text: "Supervisores"),
+                                      Tab(text: "Desarrolladores"),
                                       Tab(text: "Staff"),
                                       Tab(text: "Clientes"),
                                     ],
@@ -130,6 +139,20 @@ class UsersScreen extends ConsumerWidget {
                                           "Administradores",
                                           admins,
                                           AppColors.gsnBlue,
+                                        ),
+                                        _buildRoleColumn(
+                                          context,
+                                          ref,
+                                          "Supervisores",
+                                          supervisors,
+                                          Colors.deepPurple,
+                                        ),
+                                        _buildRoleColumn(
+                                          context,
+                                          ref,
+                                          "Desarrolladores",
+                                          developers,
+                                          Colors.teal,
                                         ),
                                         _buildRoleColumn(
                                           context,
@@ -153,39 +176,73 @@ class UsersScreen extends ConsumerWidget {
                             );
                           }
 
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: _buildRoleColumn(
-                                  context,
-                                  ref,
-                                  "Administradores",
-                                  admins,
-                                  AppColors.gsnBlue,
+                          return DefaultTabController(
+                            length: 5,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const TabBar(
+                                  isScrollable: true,
+                                  labelColor: AppColors.gsnBlue,
+                                  unselectedLabelColor: AppColors.textSecondary,
+                                  indicatorColor: AppColors.gsnBlue,
+                                  tabs: [
+                                    Tab(text: "Administradores"),
+                                    Tab(text: "Supervisores"),
+                                    Tab(text: "Desarrolladores"),
+                                    Tab(text: "Staff / Equipo Generales"),
+                                    Tab(text: "Clientes"),
+                                  ],
                                 ),
-                              ),
-                              const SizedBox(width: 24),
-                              Expanded(
-                                child: _buildRoleColumn(
-                                  context,
-                                  ref,
-                                  "Staff / Equipo",
-                                  staff,
-                                  Colors.amber,
+                                const SizedBox(height: 16),
+                                Expanded(
+                                  child: TabBarView(
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: _buildRoleColumn(context, ref, "Administradores", admins, AppColors.gsnBlue),
+                                          ),
+                                          const Expanded(flex: 2, child: SizedBox()), // Filler for layout
+                                        ],
+                                      ),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: _buildRoleColumn(context, ref, "Supervisores", supervisors, Colors.deepPurple),
+                                          ),
+                                          const Expanded(flex: 2, child: SizedBox()),
+                                        ],
+                                      ),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: _buildRoleColumn(context, ref, "Desarrolladores", developers, Colors.teal),
+                                          ),
+                                          const Expanded(flex: 2, child: SizedBox()),
+                                        ],
+                                      ),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: _buildRoleColumn(context, ref, "Staff / Equipo", staff, Colors.amber),
+                                          ),
+                                          const Expanded(flex: 2, child: SizedBox()),
+                                        ],
+                                      ),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: _buildRoleColumn(context, ref, "Clientes", clients, AppColors.success),
+                                          ),
+                                          const Expanded(flex: 2, child: SizedBox()),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 24),
-                              Expanded(
-                                child: _buildRoleColumn(
-                                  context,
-                                  ref,
-                                  "Clientes",
-                                  clients,
-                                  AppColors.success,
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           );
                         },
                         loading: () =>
@@ -471,7 +528,15 @@ class UsersScreen extends ConsumerWidget {
                           ),
                           DropdownMenuItem(
                             value: 'staff',
-                            child: Text("Staff / Equipo"),
+                            child: Text("Staff General"),
+                          ),
+                          DropdownMenuItem(
+                            value: 'supervisor',
+                            child: Text("Supervisor"),
+                          ),
+                          DropdownMenuItem(
+                            value: 'developer',
+                            child: Text("Desarrollador"),
                           ),
                           DropdownMenuItem(
                             value: 'admin',
@@ -653,7 +718,15 @@ class UsersScreen extends ConsumerWidget {
                           ),
                           DropdownMenuItem(
                             value: 'staff',
-                            child: Text("Staff / Equipo"),
+                            child: Text("Staff General"),
+                          ),
+                          DropdownMenuItem(
+                            value: 'supervisor',
+                            child: Text("Supervisor"),
+                          ),
+                          DropdownMenuItem(
+                            value: 'developer',
+                            child: Text("Desarrollador"),
                           ),
                           DropdownMenuItem(
                             value: 'admin',

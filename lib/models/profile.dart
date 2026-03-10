@@ -3,7 +3,7 @@ class Profile {
   final String? email;
   final String? fullName;
   final String? avatarUrl;
-  final String role; // 'admin', 'staff', 'client', 'public'
+  final String role; // 'admin', 'staff', 'client', 'public', 'supervisor', 'developer'
   final String? rut;
   final String? companyName;
   final String? fantasyName;

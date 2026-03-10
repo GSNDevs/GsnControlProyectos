@@ -11,6 +11,8 @@ import 'package:gsn_control_de_proyectos/services/project_payments_service.dart'
 import 'package:gsn_control_de_proyectos/services/product_categories_service.dart';
 import 'package:gsn_control_de_proyectos/services/notifications_service.dart';
 import 'package:gsn_control_de_proyectos/services/quotes_service.dart';
+import 'package:gsn_control_de_proyectos/services/project_members_service.dart';
+import 'package:gsn_control_de_proyectos/services/user_documents_service.dart';
 
 final notificationsServiceProvider = Provider((ref) => NotificationsService());
 
@@ -36,3 +38,11 @@ final productCategoriesServiceProvider = Provider(
 );
 
 final quotesServiceProvider = Provider((ref) => QuotesService());
+
+final projectMembersServiceProvider = Provider(
+  (ref) => ProjectMembersService(),
+);
+
+final userDocumentsServiceProvider = Provider(
+  (ref) => UserDocumentsService(),
+);

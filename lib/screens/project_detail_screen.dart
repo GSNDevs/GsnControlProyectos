@@ -3024,6 +3024,8 @@ class _BillingTabState extends ConsumerState<_BillingTab> {
   @override
   Widget build(BuildContext context) {
     final paymentsAsync = ref.watch(projectPaymentsProvider(widget.project.id));
+    final currentUser = ref.watch(authProvider);
+    final canManageBilling = currentUser?.role == 'admin' || currentUser?.role == 'supervisor';
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -3101,21 +3103,22 @@ class _BillingTabState extends ConsumerState<_BillingTab> {
                   ],
                 ),
                 const SizedBox(height: 32),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.gsnBlue,
-                    padding: const EdgeInsets.all(16),
-                  ),
-                  onPressed: () => _showAddPaymentDialog(context, ref),
-                  icon: const Icon(Icons.add, color: Colors.white),
-                  label: const Text(
-                    "Registrar Nuevo Cobro",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                if (canManageBilling)
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.gsnBlue,
+                      padding: const EdgeInsets.all(16),
+                    ),
+                    onPressed: () => _showAddPaymentDialog(context, ref),
+                    icon: const Icon(Icons.add, color: Colors.white),
+                    label: const Text(
+                      "Registrar Nuevo Cobro",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           );
@@ -3192,7 +3195,7 @@ class _BillingTabState extends ConsumerState<_BillingTab> {
                                 ),
                               ],
                             ),
-                            trailing: Row(
+                            trailing: canManageBilling ? Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
@@ -3260,7 +3263,7 @@ class _BillingTabState extends ConsumerState<_BillingTab> {
                                   },
                                 ),
                               ],
-                            ),
+                            ) : null,
                           );
                         },
                       );

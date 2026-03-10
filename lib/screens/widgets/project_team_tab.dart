@@ -42,6 +42,18 @@ class _ProjectTeamTabState extends ConsumerState<ProjectTeamTab> {
     final activeMembers = members.where((m) => m.isActive).toList();
     final profiles = profilesAsync.value ?? [];
 
+    // Sort active members descending by role priority: admin(0) -> supervisor(1) -> staff(2) -> developer(3)
+    final roleWeights = {'admin': 0, 'supervisor': 1, 'staff': 2, 'developer': 3};
+    activeMembers.sort((a, b) {
+      final pA = profiles.firstWhere((p) => p.id == a.profileId, orElse: () => Profile(id: '', role: 'client', createdAt: DateTime.now()));
+      final pB = profiles.firstWhere((p) => p.id == b.profileId, orElse: () => Profile(id: '', role: 'client', createdAt: DateTime.now()));
+      
+      final weightA = roleWeights[pA.role] ?? 99;
+      final weightB = roleWeights[pB.role] ?? 99;
+      
+      return weightA.compareTo(weightB);
+    });
+
     final canManageMembers = (user?.role == 'admin' || user?.role == 'supervisor') && !widget.isClient;
 
     return Padding(
@@ -123,8 +135,8 @@ class _ProjectTeamTabState extends ConsumerState<ProjectTeamTab> {
     final canViewDocs = canManageMembers || widget.isClient;
     
     // Only show "Ver Documentos" if the user has a relevant role. 
-    // Usually only staff, developer, supervisor have safety documents.
-    final needsDocuments = ['staff', 'supervisor', 'developer'].contains(profile.role);
+    // Usually only staff and supervisor have safety documents.
+    final needsDocuments = ['staff', 'supervisor'].contains(profile.role);
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -197,7 +209,7 @@ class _ProjectTeamTabState extends ConsumerState<ProjectTeamTab> {
 
   void _showAddMemberDialog(BuildContext context, List<ProjectMember> activeMembers, List<Profile> profiles) {
     // Only allow assigning staff, supervisors, and developers. No clients or public.
-    final selectableRoles = ['staff', 'supervisor', 'developer'];
+    final selectableRoles = ['admin', 'staff', 'supervisor', 'developer'];
     
     // Filter profiles that are enabled and have a valid role
     final availableProfiles = profiles.where((p) {
@@ -217,59 +229,19 @@ class _ProjectTeamTabState extends ConsumerState<ProjectTeamTab> {
             width: 400,
             child: availableProfiles.isEmpty
                 ? const Text("No hay usuarios adicionales disponibles para asignar.")
-                : ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: availableProfiles.length,
-                    itemBuilder: (context, index) {
-                      final profile = availableProfiles[index];
-                      return ListTile(
-                        leading: CircleAvatar(
-                          child: Text(
-                            (profile.fullName ?? profile.email ?? '?')[0].toUpperCase(),
-                          ),
-                        ),
-                        title: Text(profile.fullName ?? profile.email ?? 'Desconocido'),
-                        subtitle: Text(profile.role.toUpperCase()),
-                        trailing: ElevatedButton(
-                          onPressed: () async {
-                            try {
-                              // Check if the member exists but is deactivated
-                              final membersAsync = ref.read(projectMembersProvider(widget.project.id));
-                              final allMembers = membersAsync.value ?? [];
-                              final existingMember = allMembers.where((m) => m.profileId == profile.id).firstOrNull;
-
-                              if (existingMember != null) {
-                                // Reactivate
-                                await ref.read(projectMembersControllerProvider).updateMemberStatus(
-                                  widget.project.id, 
-                                  existingMember.id, 
-                                  true
-                                );
-                              } else {
-                                // Add new
-                                await ref.read(projectMembersControllerProvider).addMember(
-                                  widget.project.id, 
-                                  profile.id
-                                );
-                              }
-                              if (context.mounted) {
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text("Usuario asignado correctamente.")),
-                                );
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text("Error al asignar: $e")),
-                                );
-                              }
-                            }
-                          },
-                          child: const Text("Agregar"),
-                        ),
-                      );
-                    },
+                : SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildRoleUserGroup(context, "Administradores", availableProfiles.where((p) => p.role == 'admin').toList()),
+                        const SizedBox(height: 16),
+                        _buildRoleUserGroup(context, "Supervisores", availableProfiles.where((p) => p.role == 'supervisor').toList()),
+                        const SizedBox(height: 16),
+                        _buildRoleUserGroup(context, "Desarrolladores", availableProfiles.where((p) => p.role == 'developer').toList()),
+                        const SizedBox(height: 16),
+                        _buildRoleUserGroup(context, "Staff", availableProfiles.where((p) => p.role == 'staff').toList()),
+                      ],
+                    ),
                   ),
           ),
           actions: [
@@ -322,6 +294,88 @@ class _ProjectTeamTabState extends ConsumerState<ProjectTeamTab> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRoleUserGroup(BuildContext context, String title, List<Profile> roleProfiles) {
+    if (roleProfiles.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.gsnBlue.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.people_alt, size: 16, color: AppColors.gsnBlue),
+              const SizedBox(width: 8),
+              Text(
+                title.toUpperCase(),
+                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.gsnBlue, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...roleProfiles.map((profile) {
+          return ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: CircleAvatar(
+              backgroundColor: AppColors.background,
+              child: Text(
+                (profile.fullName ?? profile.email ?? '?')[0].toUpperCase(),
+                style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+              ),
+            ),
+            title: Text(profile.fullName ?? profile.email ?? 'Desconocido', style: const TextStyle(fontSize: 14)),
+            subtitle: Text(profile.email ?? '', style: const TextStyle(fontSize: 12)),
+            trailing: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.gsnBlue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              ),
+              onPressed: () async {
+                try {
+                  final membersAsync = ref.read(projectMembersProvider(widget.project.id));
+                  final allMembers = membersAsync.value ?? [];
+                  final existingMember = allMembers.where((m) => m.profileId == profile.id).firstOrNull;
+
+                  if (existingMember != null) {
+                    await ref.read(projectMembersControllerProvider).updateMemberStatus(
+                      widget.project.id, 
+                      existingMember.id, 
+                      true
+                    );
+                  } else {
+                    await ref.read(projectMembersControllerProvider).addMember(
+                      widget.project.id, 
+                      profile.id
+                    );
+                  }
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Usuario asignado correctamente.")),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Error al asignar: $e")),
+                    );
+                  }
+                }
+              },
+              child: const Text("Agregar", style: TextStyle(fontSize: 12)),
+            ),
+          );
+        }),
+      ],
     );
   }
 }

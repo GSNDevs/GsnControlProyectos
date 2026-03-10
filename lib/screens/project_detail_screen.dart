@@ -2229,33 +2229,49 @@ void _showEditTaskAssigneesDialog(
                           );
                         }
 
-                        return Wrap(
-                          spacing: 8.0,
-                          runSpacing: 4.0,
-                          children: assignableUsers.map((user) {
-                            final isSelected = selectedAssignees.contains(
-                              user.id,
-                            );
-                            return FilterChip(
-                              label: Text(
-                                user.fullName ?? user.email ?? 'Sin Nombre',
+                        Widget buildGroup(String title, List<Profile> users) {
+                          if (users.isEmpty) return const SizedBox.shrink();
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8, bottom: 4),
+                                child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.gsnBlue)),
                               ),
-                              selected: isSelected,
-                              onSelected: (selected) {
-                                setState(() {
-                                  if (selected) {
-                                    selectedAssignees.add(user.id);
-                                  } else {
-                                    selectedAssignees.remove(user.id);
-                                  }
-                                });
-                              },
-                              selectedColor: AppColors.gsnBlue.withValues(
-                                alpha: 0.2,
+                              Wrap(
+                                spacing: 8.0,
+                                runSpacing: 4.0,
+                                children: users.map((user) {
+                                  final isSelected = selectedAssignees.contains(user.id);
+                                  return FilterChip(
+                                    label: Text(user.fullName ?? user.email ?? 'Sin Nombre'),
+                                    selected: isSelected,
+                                    onSelected: (selected) {
+                                      setState(() {
+                                        if (selected) {
+                                          selectedAssignees.add(user.id);
+                                        } else {
+                                          selectedAssignees.remove(user.id);
+                                        }
+                                      });
+                                    },
+                                    selectedColor: AppColors.gsnBlue.withValues(alpha: 0.2),
+                                    checkmarkColor: AppColors.gsnBlue,
+                                  );
+                                }).toList(),
                               ),
-                              checkmarkColor: AppColors.gsnBlue,
-                            );
-                          }).toList(),
+                            ],
+                          );
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            buildGroup("Administradores", assignableUsers.where((p) => p.role == 'admin').toList()),
+                            buildGroup("Supervisores", assignableUsers.where((p) => p.role == 'supervisor').toList()),
+                            buildGroup("Desarrolladores", assignableUsers.where((p) => p.role == 'developer').toList()),
+                            buildGroup("Staff", assignableUsers.where((p) => p.role == 'staff').toList()),
+                          ],
                         );
                       }),
                     ],
@@ -2395,33 +2411,49 @@ void _showCreateTaskDialog(
                           );
                         }
 
-                        return Wrap(
-                          spacing: 8.0,
-                          runSpacing: 4.0,
-                          children: assignableUsers.map((user) {
-                            final isSelected = selectedAssignees.contains(
-                              user.id,
-                            );
-                            return FilterChip(
-                              label: Text(
-                                user.fullName ?? user.email ?? 'Sin Nombre',
+                        Widget buildGroup(String title, List<Profile> users) {
+                          if (users.isEmpty) return const SizedBox.shrink();
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8, bottom: 4),
+                                child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.gsnBlue)),
                               ),
-                              selected: isSelected,
-                              onSelected: (selected) {
-                                setState(() {
-                                  if (selected) {
-                                    selectedAssignees.add(user.id);
-                                  } else {
-                                    selectedAssignees.remove(user.id);
-                                  }
-                                });
-                              },
-                              selectedColor: AppColors.gsnBlue.withValues(
-                                alpha: 0.2,
+                              Wrap(
+                                spacing: 8.0,
+                                runSpacing: 4.0,
+                                children: users.map((user) {
+                                  final isSelected = selectedAssignees.contains(user.id);
+                                  return FilterChip(
+                                    label: Text(user.fullName ?? user.email ?? 'Sin Nombre'),
+                                    selected: isSelected,
+                                    onSelected: (selected) {
+                                      setState(() {
+                                        if (selected) {
+                                          selectedAssignees.add(user.id);
+                                        } else {
+                                          selectedAssignees.remove(user.id);
+                                        }
+                                      });
+                                    },
+                                    selectedColor: AppColors.gsnBlue.withValues(alpha: 0.2),
+                                    checkmarkColor: AppColors.gsnBlue,
+                                  );
+                                }).toList(),
                               ),
-                              checkmarkColor: AppColors.gsnBlue,
-                            );
-                          }).toList(),
+                            ],
+                          );
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            buildGroup("Administradores", assignableUsers.where((p) => p.role == 'admin').toList()),
+                            buildGroup("Supervisores", assignableUsers.where((p) => p.role == 'supervisor').toList()),
+                            buildGroup("Desarrolladores", assignableUsers.where((p) => p.role == 'developer').toList()),
+                            buildGroup("Staff", assignableUsers.where((p) => p.role == 'staff').toList()),
+                          ],
                         );
                       }),
                     ],

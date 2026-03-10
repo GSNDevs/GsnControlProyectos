@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 
 class ProfilesService {
   final SupabaseClient _client = Supabase.instance.client;
@@ -27,9 +27,9 @@ class ProfilesService {
     String role,
   ) async {
     // 1. Create Auth User use a SECONDARY SupabaseClient.
-    // Note: This relies on flutter_dotenv being loaded in main.dart
-    final url = dotenv.env['SUPABASE_URL']!;
-    final key = dotenv.env['SUPABASE_ANON_KEY']!;
+    // Note: Since dotenv is not used in main.dart, we use the same credentials as main.dart
+    const url = 'https://manvemwmogetigvawrmz.supabase.co';
+    const key = 'sb_publishable_58k64LmYqdzWGCRn8fOs5w_Py9K-Tru';
 
     final tempClient = SupabaseClient(
       url,

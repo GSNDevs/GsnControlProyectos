@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:gsn_control_de_proyectos/utils/app_colors.dart';
 import 'package:gsn_control_de_proyectos/providers/auth_provider.dart';
@@ -190,6 +191,15 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                             ),
                             IconButton(
                               icon: const Icon(
+                                Icons.vpn_key_rounded,
+                                color: Colors.white70,
+                                size: 20,
+                              ),
+                              onPressed: () => _showChangePasswordDialog(context),
+                              tooltip: "Cambiar mi contraseña",
+                            ),
+                            IconButton(
+                              icon: const Icon(
                                 Icons.logout_rounded,
                                 color: Colors.white70,
                                 size: 20,
@@ -200,13 +210,26 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                             ),
                           ],
                         )
-                      : IconButton(
-                          icon: const Icon(
-                            Icons.logout_rounded,
-                            color: Colors.white70,
-                          ),
-                          onPressed: () =>
-                              ref.read(authProvider.notifier).logout(),
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.vpn_key_rounded,
+                                color: Colors.white70,
+                              ),
+                              onPressed: () => _showChangePasswordDialog(context),
+                              tooltip: "Cambiar mi contraseña",
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.logout_rounded,
+                                color: Colors.white70,
+                              ),
+                              onPressed: () =>
+                                  ref.read(authProvider.notifier).logout(),
+                            ),
+                          ],
                         ),
                 ),
               ],
@@ -373,6 +396,68 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
             onTap: () => ref.read(authProvider.notifier).logout(),
           ),
           const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  void _showChangePasswordDialog(BuildContext context) {
+    final passCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Cambiar Mi Contraseña"),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: passCtrl,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: "Nueva Contraseña",
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) =>
+                    v == null || v.length < 6 ? 'Mínimo 6 caracteres' : null,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                try {
+                  await Supabase.instance.client.auth.updateUser(
+                    UserAttributes(password: passCtrl.text),
+                  );
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Contraseña actualizada exitosamente"),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Error: $e")),
+                    );
+                  }
+                }
+              }
+            },
+            child: const Text("Actualizar"),
+          ),
         ],
       ),
     );

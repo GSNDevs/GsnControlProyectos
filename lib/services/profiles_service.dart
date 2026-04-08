@@ -28,19 +28,30 @@ class ProfilesService {
   ) async {
     try {
       await _client.rpc('admin_create_user', params: {
-        'input_email': data['email'],
-        'input_password': data['password'],
+        'input_email': data['email'] ?? '',
+        'input_password': data['password'] ?? '',
         'input_full_name': data['full_name'] ?? '',
         'input_role': role,
-        'input_rut': data['rut'],
-        'input_company_name': data['company_name'],
-        'input_fantasy_name': data['fantasy_name'],
-        'input_address': data['address'],
+        'input_rut': data['rut'] ?? '',
+        'input_company_name': data['company_name'] ?? '',
+        'input_fantasy_name': data['fantasy_name'] ?? '',
+        'input_address': data['address'] ?? '',
       });
     } on PostgrestException catch (pe) {
       throw Exception(pe.message);
     } catch (e) {
-      throw Exception("Error al crear usuario: $e");
+      String errorMessage = "Error desconocido";
+      try {
+        final dynamic err = e;
+        if (err.message != null) {
+          errorMessage = err.message.toString();
+        } else {
+          errorMessage = e.toString();
+        }
+      } catch (_) {
+        errorMessage = e.toString();
+      }
+      throw Exception("Error al crear usuario: $errorMessage");
     }
   }
 

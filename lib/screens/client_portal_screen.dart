@@ -6,6 +6,7 @@ import 'package:gsn_control_de_proyectos/providers/auth_provider.dart';
 import 'package:gsn_control_de_proyectos/providers/providers.dart';
 import 'package:gsn_control_de_proyectos/utils/app_colors.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ClientPortalScreen extends ConsumerWidget {
   const ClientPortalScreen({super.key});
@@ -50,12 +51,39 @@ class ClientPortalScreen extends ConsumerWidget {
             icon: const Icon(Icons.request_quote, color: Colors.white),
             label: const Text("Cotizar", style: TextStyle(color: Colors.white)),
           ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              ref.read(authProvider.notifier).logout();
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.person, color: Colors.white),
+            tooltip: "Opciones de cuenta",
+            color: Colors.white,
+            onSelected: (value) {
+              if (value == 'password') {
+                _showChangePasswordDialog(context);
+              } else if (value == 'logout') {
+                ref.read(authProvider.notifier).logout();
+              }
             },
-            tooltip: "Cerrar sesión",
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'password',
+                child: Row(
+                  children: [
+                    Icon(Icons.lock_reset, color: AppColors.textPrimary, size: 20),
+                    SizedBox(width: 8),
+                    Text("Cambiar Contraseña"),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, color: AppColors.error, size: 20),
+                    SizedBox(width: 8),
+                    Text("Cerrar Sesión", style: TextStyle(color: AppColors.error)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -395,5 +423,108 @@ class ClientPortalScreen extends ConsumerWidget {
       case ProjectStatus.completed:
         return AppColors.success;
     }
+  }
+
+  void _showChangePasswordDialog(BuildContext context) {
+    final passCtrl = TextEditingController();
+    final confirmCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text("Cambiar Contraseña"),
+            content: SizedBox(
+              width: 400,
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: passCtrl,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: "Nueva Contraseña",
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (v) => v == null || v.length < 6
+                          ? 'Mínimo 6 caracteres'
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: confirmCtrl,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: "Confirmar Nueva Contraseña",
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (v) {
+                        if (v != passCtrl.text) return 'Las contraseñas no coinciden';
+                        if (v == null || v.isEmpty) return 'Requerido';
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isLoading ? null : () => Navigator.pop(context),
+                child: const Text("Cancelar"),
+              ),
+              ElevatedButton(
+                onPressed: isLoading
+                    ? null
+                    : () async {
+                        if (formKey.currentState!.validate()) {
+                          setState(() => isLoading = true);
+                          try {
+                            await Supabase.instance.client.auth.updateUser(
+                              UserAttributes(password: passCtrl.text),
+                            );
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      "Contraseña actualizada exitosamente"),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("Error al actualizar: $e"),
+                                  backgroundColor: AppColors.error,
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (context.mounted) {
+                              setState(() => isLoading = false);
+                            }
+                          }
+                        }
+                      },
+                child: isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text("Actualizar"),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }

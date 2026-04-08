@@ -26,48 +26,22 @@ class ProfilesService {
     Map<String, dynamic> data,
     String role,
   ) async {
-    // 1. Create Auth User use a SECONDARY SupabaseClient.
-    // Note: Since dotenv is not used in main.dart, we use the same credentials as main.dart
-    const url = 'https://manvemwmogetigvawrmz.supabase.co';
-    const key = 'sb_publishable_58k64LmYqdzWGCRn8fOs5w_Py9K-Tru';
-
-    final tempClient = SupabaseClient(
-      url,
-      key,
-      authOptions: const AuthClientOptions(authFlowType: AuthFlowType.implicit),
-    );
-
-    final authResponse = await tempClient.auth.signUp(
-      email: data['email'],
-      password: data['password'],
-      data: {'full_name': data['full_name']},
-    );
-
-    if (authResponse.user == null) {
-      throw Exception("No se pudo crear el usuario de autenticación");
+    try {
+      await _client.rpc('admin_create_user', params: {
+        'input_email': data['email'],
+        'input_password': data['password'],
+        'input_full_name': data['full_name'] ?? '',
+        'input_role': role,
+        'input_rut': data['rut'],
+        'input_company_name': data['company_name'],
+        'input_fantasy_name': data['fantasy_name'],
+        'input_address': data['address'],
+      });
+    } on PostgrestException catch (pe) {
+      throw Exception(pe.message);
+    } catch (e) {
+      throw Exception("Error al crear usuario: $e");
     }
-
-    final newUserId = authResponse.user!.id;
-
-    // 2. Insert/Update Profile
-    final profileData = {
-      'id': newUserId,
-      'email': data['email'],
-      'full_name': data['full_name'],
-      'role': role,
-      'rut': data['rut'],
-      'company_name': data['company_name'],
-      'fantasy_name': data['fantasy_name'],
-      'address': data['address'],
-      'created_at': DateTime.now().toIso8601String(),
-    };
-
-    // Upsert using the ADMIN (main) client to ensure we can write to the table
-    // (Assuming the logged-in user has permission to create profiles, e.g., is admin/staff)
-    await _client.from(_tableName).upsert(profileData);
-
-    // Explicitly sign out the temp client just in case, though it shouldn't persist.
-    await tempClient.dispose();
   }
 
   Future<void> updateProfile(String id, Map<String, dynamic> updates) async {

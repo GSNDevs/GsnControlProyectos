@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 
 import 'package:gsn_control_de_proyectos/utils/app_colors.dart';
 import 'package:gsn_control_de_proyectos/providers/auth_provider.dart';

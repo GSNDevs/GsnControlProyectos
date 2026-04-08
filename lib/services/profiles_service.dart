@@ -55,6 +55,30 @@ class ProfilesService {
     }
   }
 
+  Future<void> changeProfilePassword(String targetUserId, String newPassword) async {
+    try {
+      await _client.rpc('admin_change_password', params: {
+        'target_user_id': targetUserId,
+        'new_password': newPassword,
+      });
+    } on PostgrestException catch (pe) {
+      throw Exception(pe.message);
+    } catch (e) {
+      String errorMessage = "Error desconocido";
+      try {
+        final dynamic err = e;
+        if (err.message != null) {
+          errorMessage = err.message.toString();
+        } else {
+          errorMessage = e.toString();
+        }
+      } catch (_) {
+        errorMessage = e.toString();
+      }
+      throw Exception("Error al cambiar contraseña: $errorMessage");
+    }
+  }
+
   Future<void> updateProfile(String id, Map<String, dynamic> updates) async {
     await _client.from(_tableName).update(updates).eq('id', id);
   }

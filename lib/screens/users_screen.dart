@@ -687,6 +687,7 @@ class UsersScreen extends ConsumerWidget {
     final companyCtrl = TextEditingController(text: profile.companyName);
     final fantasyCtrl = TextEditingController(text: profile.fantasyName);
     final addressCtrl = TextEditingController(text: profile.address);
+    final passCtrl = TextEditingController(); // Contraseña nueva opcional
     final formKey = GlobalKey<FormState>();
 
     String selectedRole = profile.role;
@@ -798,6 +799,18 @@ class UsersScreen extends ConsumerWidget {
                           border: OutlineInputBorder(),
                         ),
                       ),
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        controller: passCtrl,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          labelText: "Nueva Contraseña (Opcional)",
+                          border: OutlineInputBorder(),
+                          helperText: "Dejar en blanco para no cambiarla",
+                        ),
+                        validator: (v) =>
+                            v!.isNotEmpty && v.length < 6 ? 'Mínimo 6 caracteres' : null,
+                      ),
                     ],
                   ),
                 ),
@@ -828,6 +841,10 @@ class UsersScreen extends ConsumerWidget {
 
                       final service = ref.read(profilesServiceProvider);
                       await service.updateProfile(profile.id, updates);
+
+                      if (passCtrl.text.isNotEmpty) {
+                        await service.changeProfilePassword(profile.id, passCtrl.text);
+                      }
 
                       ref.invalidate(profilesProvider);
                       // Invalidate clients too in case role changed

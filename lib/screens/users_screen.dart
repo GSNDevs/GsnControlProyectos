@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gsn_control_de_proyectos/providers/providers.dart';
 import 'package:gsn_control_de_proyectos/utils/app_colors.dart';
 import 'package:gsn_control_de_proyectos/models/models.dart';
+import 'package:gsn_control_de_proyectos/providers/auth_provider.dart';
 
 class UsersScreen extends ConsumerWidget {
   const UsersScreen({super.key});
@@ -691,6 +692,9 @@ class UsersScreen extends ConsumerWidget {
     final formKey = GlobalKey<FormState>();
 
     String selectedRole = profile.role;
+    
+    final currentUser = ref.read(authProvider);
+    final isAdmin = currentUser?.role == 'admin';
 
     showDialog(
       context: context,
@@ -799,18 +803,20 @@ class UsersScreen extends ConsumerWidget {
                           border: OutlineInputBorder(),
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        controller: passCtrl,
-                        obscureText: true,
-                        decoration: const InputDecoration(
-                          labelText: "Nueva Contraseña (Opcional)",
-                          border: OutlineInputBorder(),
-                          helperText: "Dejar en blanco para no cambiarla",
+                      if (isAdmin) ...[
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: passCtrl,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: "Nueva Contraseña (Opcional)",
+                            border: OutlineInputBorder(),
+                            helperText: "Dejar en blanco para no cambiarla",
+                          ),
+                          validator: (v) =>
+                              v!.isNotEmpty && v.length < 6 ? 'Mínimo 6 caracteres' : null,
                         ),
-                        validator: (v) =>
-                            v!.isNotEmpty && v.length < 6 ? 'Mínimo 6 caracteres' : null,
-                      ),
+                      ],
                     ],
                   ),
                 ),
@@ -842,7 +848,7 @@ class UsersScreen extends ConsumerWidget {
                       final service = ref.read(profilesServiceProvider);
                       await service.updateProfile(profile.id, updates);
 
-                      if (passCtrl.text.isNotEmpty) {
+                      if (isAdmin && passCtrl.text.isNotEmpty) {
                         await service.changeProfilePassword(profile.id, passCtrl.text);
                       }
 

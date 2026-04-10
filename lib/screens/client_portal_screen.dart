@@ -412,31 +412,15 @@ class _ClientPortalScreenState extends ConsumerState<ClientPortalScreen> {
                                       ),
                                     ),
                                     const SizedBox(height: 16),
-                                    Row(
-                                      crossAxisAlignment: CrossAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          myProjects.length.toString().padLeft(2, '0'),
-                                          style: const TextStyle(
-                                            fontSize: 64,
-                                            fontWeight: FontWeight.w900,
-                                            color: Color(0xFF00658D),
-                                            letterSpacing: -3,
-                                            height: 1,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Padding(
-                                          padding: const EdgeInsets.only(bottom: 8),
-                                          child: Text(
-                                            inProgressCount > 0 ? "$inProgressCount en progreso" : "monitoreando",
-                                            style: const TextStyle(
-                                              color: Color(0xFF64748B),
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                    Text(
+                                      myProjects.length.toString().padLeft(2, '0'),
+                                      style: const TextStyle(
+                                        fontSize: 64,
+                                        fontWeight: FontWeight.w900,
+                                        color: Color(0xFF00658D),
+                                        letterSpacing: -3,
+                                        height: 1,
+                                      ),
                                     ),
                                   ],
                                 ),

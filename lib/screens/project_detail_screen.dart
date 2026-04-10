@@ -524,8 +524,14 @@ class _OverviewTab extends ConsumerWidget {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+                Text(
+                  (project.description != null && project.description!.isNotEmpty)
+                      ? project.description!
+                      : "Sin descripción disponible.",
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    height: 1.6,
+                  ),
                 ),
               ],
             ),

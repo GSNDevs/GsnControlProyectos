@@ -355,6 +355,7 @@ class ProjectsScreen extends ConsumerWidget {
 
   void _showCreateProjectDialog(BuildContext context, WidgetRef ref) {
     final nameCtrl = TextEditingController();
+    final descriptionCtrl = TextEditingController();
     final budgetCtrl = TextEditingController();
     final locationUrlCtrl = TextEditingController();
     ProjectType selectedType = ProjectType.physical;
@@ -391,6 +392,20 @@ class ProjectsScreen extends ConsumerWidget {
                           controller: nameCtrl,
                           decoration: InputDecoration(
                             labelText: "Nombre del Proyecto",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey[50],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: descriptionCtrl,
+                          maxLines: 3,
+                          decoration: InputDecoration(
+                            labelText: "Descripción del Proyecto",
+                            hintText: "Describe el alcance y objetivo...",
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -601,6 +616,9 @@ class ProjectsScreen extends ConsumerWidget {
 
                         final newProject = {
                           'name': nameCtrl.text,
+                          'description': descriptionCtrl.text.trim().isEmpty
+                              ? null
+                              : descriptionCtrl.text.trim(),
                           'client_id': selectedClientId,
                           'type': selectedType.name,
                           'status': ProjectStatus.planning.name,
@@ -650,6 +668,7 @@ class ProjectsScreen extends ConsumerWidget {
     Project project,
   ) {
     final nameCtrl = TextEditingController(text: project.name);
+    final descriptionCtrl = TextEditingController(text: project.description ?? '');
     final budgetCtrl = TextEditingController(
       text: project.budgetTotal.toString(),
     );
@@ -684,6 +703,20 @@ class ProjectsScreen extends ConsumerWidget {
                       controller: nameCtrl,
                       decoration: InputDecoration(
                         labelText: "Nombre del Proyecto",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: descriptionCtrl,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        labelText: "Descripción del Proyecto",
+                        hintText: "Describe el alcance y objetivo...",
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -861,6 +894,9 @@ class ProjectsScreen extends ConsumerWidget {
 
                     final updates = {
                       'name': nameCtrl.text,
+                      'description': descriptionCtrl.text.trim().isEmpty
+                          ? null
+                          : descriptionCtrl.text.trim(),
                       'status': selectedStatus.name,
                       'client_id': selectedClientId,
                       'budget_total': double.tryParse(budgetCtrl.text) ?? 0,

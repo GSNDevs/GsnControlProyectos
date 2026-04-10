@@ -658,6 +658,7 @@ class ProjectsScreen extends ConsumerWidget {
     );
     DateTime? selectedTentativeEndDate = project.tentativeEndDate;
     ProjectStatus selectedStatus = project.status;
+    String? selectedClientId = project.clientId;
 
     showDialog(
       context: context,
@@ -690,6 +691,50 @@ class ProjectsScreen extends ConsumerWidget {
                         fillColor: Colors.grey[50],
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    Consumer(builder: (context, ref, child) {
+                      final clientsAsync = ref.watch(clientCompaniesProvider);
+                      return clientsAsync.when(
+                        data: (clients) {
+                          // Allow empty selection
+                          final clientItems = clients
+                              .map((c) => DropdownMenuItem<String?>(
+                                    value: c.id,
+                                    child: Text(c.name),
+                                  ))
+                              .toList();
+                          // Add null option explicitly
+                          clientItems.insert(
+                              0,
+                              const DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text('Sin Empresa Asignada'),
+                              ));
+                          
+                          // Ensure we don't crash if the formerly assigned client is no longer in the list somehow
+                          final hasMatch = selectedClientId == null || clients.any((c) => c.id == selectedClientId);
+                          if (!hasMatch) selectedClientId = null;
+
+                          return DropdownButtonFormField<String?>(
+                            value: selectedClientId,
+                            decoration: InputDecoration(
+                              labelText: "Empresa Mandante",
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[50],
+                            ),
+                            items: clientItems,
+                            onChanged: (val) {
+                              setState(() => selectedClientId = val);
+                            },
+                          );
+                        },
+                        loading: () => const CircularProgressIndicator(),
+                        error: (err, _) => Text("Error cargando empresas: $err"),
+                      );
+                    }),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<ProjectStatus>(
                       initialValue: selectedStatus,
@@ -817,6 +862,7 @@ class ProjectsScreen extends ConsumerWidget {
                     final updates = {
                       'name': nameCtrl.text,
                       'status': selectedStatus.name,
+                      'client_id': selectedClientId,
                       'budget_total': double.tryParse(budgetCtrl.text) ?? 0,
                       'location_url': locationUrlCtrl.text.trim().isEmpty
                           ? null

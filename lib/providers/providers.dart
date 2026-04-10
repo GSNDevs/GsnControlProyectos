@@ -462,6 +462,22 @@ class ClientCompaniesController {
     ref.invalidate(clientCompaniesProvider);
     ref.invalidate(clientCompanyByIdProvider(id));
   }
+
+  Future<void> deleteClient(String id) async {
+    final service = ref.read(clientsServiceProvider);
+    final projectsService = ref.read(projectsServiceProvider);
+    
+    // Unlink projects manually due to ON DELETE RESTRICT constraint
+    final projects = await projectsService.getProjects();
+    final linkedProjects = projects.where((p) => p['client_id'] == id).toList();
+    for (var p in linkedProjects) {
+      await projectsService.updateProject(p['id'], {'client_id': null});
+    }
+    
+    // Profiles are automatically unlinked due to ON DELETE SET NULL in DB
+    await service.deleteClient(id);
+    ref.invalidate(clientCompaniesProvider);
+  }
 }
 
 final clientCompanyByIdProvider = FutureProvider.family<ClientCompany?, String>((ref, id) async {

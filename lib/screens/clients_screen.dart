@@ -54,7 +54,7 @@ class ClientsScreen extends ConsumerWidget {
                         boxShadow: AppColors.softShadow,
                       ),
                       child: ElevatedButton.icon(
-                        onPressed: () => _showAddClientDialog(context, ref),
+                        onPressed: () => _showClientFormDialog(context, ref),
                         icon: const Icon(
                           Icons.domain_add_rounded,
                           color: Colors.white,
@@ -230,17 +230,18 @@ class ClientsScreen extends ConsumerWidget {
     );
   }
 
-  void _showAddClientDialog(BuildContext context, WidgetRef ref) {
-    final nameCtrl = TextEditingController();
-    final fantasyCtrl = TextEditingController();
-    final rutCtrl = TextEditingController();
-    final addressCtrl = TextEditingController();
+  void _showClientFormDialog(BuildContext context, WidgetRef ref, {ClientCompany? client}) {
+    final isEditing = client != null;
+    final nameCtrl = TextEditingController(text: client?.name ?? '');
+    final fantasyCtrl = TextEditingController(text: client?.fantasyName ?? '');
+    final rutCtrl = TextEditingController(text: client?.rut ?? '');
+    final addressCtrl = TextEditingController(text: client?.address ?? '');
     final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Nueva Empresa Cliente"),
+        title: Text(isEditing ? "Editar Empresa Cliente" : "Nueva Empresa Cliente"),
         content: SizedBox(
           width: 500,
           child: SingleChildScrollView(
@@ -296,16 +297,23 @@ class ClientsScreen extends ConsumerWidget {
               if (formKey.currentState!.validate()) {
                 try {
                   final controller = ref.read(clientCompaniesControllerProvider);
-                  await controller.createClient({
+                  final data = {
                     'name': nameCtrl.text,
                     'fantasy_name': fantasyCtrl.text.isEmpty ? null : fantasyCtrl.text,
                     'rut': rutCtrl.text.isEmpty ? null : rutCtrl.text,
                     'address': addressCtrl.text.isEmpty ? null : addressCtrl.text,
-                  });
+                  };
+                  
+                  if (isEditing) {
+                    await controller.updateClient(client.id, data);
+                  } else {
+                    await controller.createClient(data);
+                  }
+                  
                   if (context.mounted) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Empresa creada exitosamente")),
+                      SnackBar(content: Text(isEditing ? "Empresa actualizada exitosamente" : "Empresa creada exitosamente")),
                     );
                   }
                 } catch (e) {
@@ -317,7 +325,7 @@ class ClientsScreen extends ConsumerWidget {
                 }
               }
             },
-            child: const Text("Crear"),
+            child: Text(isEditing ? "Guardar Cambios" : "Crear"),
           ),
         ],
       ),
@@ -360,9 +368,27 @@ class ClientsScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () => Navigator.pop(context),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit_rounded, color: AppColors.gsnBlue),
+                        tooltip: "Editar Empresa",
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _showClientFormDialog(context, ref, client: client);
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                        tooltip: "Eliminar Empresa",
+                        onPressed: () => _confirmDeleteClient(context, ref, client),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -447,64 +473,96 @@ class ClientsScreen extends ConsumerWidget {
   }
 
   void _showAddClientUserDialog(BuildContext context, WidgetRef ref, ClientCompany client) {
-    final emailCtrl = TextEditingController();
-    final passCtrl = TextEditingController();
-    final nameCtrl = TextEditingController();
-    final rutCtrl = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text("Nuevo Usuario para ${client.name}"),
+        title: Text("Asignar Usuario a ${client.name}"),
         content: SizedBox(
-          width: 400,
-          child: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.gsnBlue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      "Se creará un usuario con rol Cliente vinculado automáticamente a esta empresa.",
-                      style: TextStyle(color: AppColors.gsnBlue, fontSize: 13),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: emailCtrl,
-                    decoration: const InputDecoration(labelText: "Email (Login)", border: OutlineInputBorder()),
-                    validator: (v) => v!.isEmpty || !v.contains('@') ? 'Email inválido' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: passCtrl,
-                    decoration: const InputDecoration(labelText: "Contraseña Temporal", border: OutlineInputBorder()),
-                    obscureText: true,
-                    validator: (v) => v!.length < 6 ? 'Mínimo 6 caracteres' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: "Nombre Completo", border: OutlineInputBorder()),
-                    validator: (v) => v!.isEmpty ? 'Campo requerido' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: rutCtrl,
-                    decoration: const InputDecoration(labelText: "RUT Personal", border: OutlineInputBorder()),
-                  ),
-                ],
-              ),
-            ),
+          width: 500,
+          child: Consumer(
+            builder: (context, ref, child) {
+              final usersAsync = ref.watch(profilesProvider);
+              return usersAsync.when(
+                data: (profiles) {
+                  // Filtrar usuarios que tienen rol client y que no están ya asignados a esta empresa
+                  final availableUsers = profiles.where((p) => p.role == 'client' && p.clientId != client.id).toList();
+                  
+                  if (availableUsers.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text("No hay usuarios con rol 'client' disponibles para asignar."),
+                    );
+                  }
+
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        "Selecciona un usuario de la lista vinculada a este sistema con rol 'Cliente'. Si el usuario ya estaba en otra empresa, será transferido a esta.",
+                        style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 16),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 300),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: availableUsers.length,
+                          separatorBuilder: (_, __) => const Divider(),
+                          itemBuilder: (context, index) {
+                            final user = availableUsers[index];
+                            return ListTile(
+                              title: Text(user.fullName ?? 'Sin Nombre'),
+                              subtitle: Text(user.email ?? ''),
+                              trailing: ElevatedButton(
+                                onPressed: () async {
+                                  try {
+                                    final service = ref.read(profilesServiceProvider);
+                                    await service.updateProfile(user.id, {'client_id': client.id});
+                                    ref.invalidate(profilesProvider);
+                                    if (ctx.mounted) {
+                                      Navigator.pop(ctx);
+                                      ScaffoldMessenger.of(ctx).showSnackBar(
+                                        const SnackBar(content: Text("Usuario asignado exitosamente.")),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (ctx.mounted) {
+                                      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text("Error: $e")));
+                                    }
+                                  }
+                                },
+                                child: const Text("Asignar"),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, _) => Center(child: Text("Error: $err")),
+              );
+            },
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cerrar"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteClient(BuildContext context, WidgetRef ref, ClientCompany client) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Confirmar Eliminación"),
+        content: Text(
+          "¿Estás seguro de eliminar la empresa '${client.name}'?\n\nLos usuarios y proyectos vinculados quedarán sin empresa asignada (en nulo)."
         ),
         actions: [
           TextButton(
@@ -512,46 +570,30 @@ class ClientsScreen extends ConsumerWidget {
             child: const Text("Cancelar"),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                try {
-                  final service = ref.read(profilesServiceProvider);
-                  // 1. Create auth user and profile
-                  await service.createProfileWithAuth({
-                    'email': emailCtrl.text,
-                    'password': passCtrl.text,
-                    'full_name': nameCtrl.text,
-                    'rut': rutCtrl.text,
-                    // The backend won't accept client_id in the RPC yet unless we update the RPC,
-                    // but wait, we need to assign client_id. 
-                    // Let's modify the RPC in the background later or do an UPDATE right after
-                  }, 'client');
-                  
-                  // Now how to link? We need the user's ID.
-                  // Since we don't have the user ID back from RPC, we fetch the profile by email
-                  // Actually, Supabase admin_create_user doesn't return the ID.
-                  // But we can just fetch it:
-                  final allProfiles = await service.getProfiles();
-                  final newProfile = allProfiles.firstWhere((p) => p['email'] == emailCtrl.text);
-                  
-                  // Note: It's better to update the backend RPC, but for now this works:
-                  await service.updateProfile(newProfile['id'], {
-                    'client_id': client.id
-                  });
-
-                  ref.invalidate(profilesProvider);
-                  if (ctx.mounted) {
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text("Usuario creado y vinculado.")));
-                  }
-                } catch (e) {
-                  if (ctx.mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text("Error: $e")));
-                  }
+              try {
+                // Primero cerramos ambos dialogs
+                Navigator.pop(ctx); 
+                Navigator.pop(context); // Cierra el detalle también
+                
+                final controller = ref.read(clientCompaniesControllerProvider);
+                await controller.deleteClient(client.id);
+                
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Empresa eliminada exitosamente.")),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Error: $e")),
+                  );
                 }
               }
             },
-            child: const Text("Crear"),
+            child: const Text("Eliminar", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

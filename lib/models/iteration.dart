@@ -1,4 +1,4 @@
-enum IterationApprovalStatus { pending, approved, rejected }
+enum IterationApprovalStatus { created, pending, approved, rejected }
 
 class Iteration {
   final String id;
@@ -18,7 +18,7 @@ class Iteration {
     this.description,
     this.startDate,
     this.endDate,
-    this.clientApprovalStatus = IterationApprovalStatus.pending,
+    this.clientApprovalStatus = IterationApprovalStatus.created,
     this.clientApprovalDate,
     this.createdAt,
   });
@@ -59,7 +59,7 @@ class Iteration {
   static IterationApprovalStatus _parseStatus(String? val) {
     return IterationApprovalStatus.values.firstWhere(
       (e) => e.name == val,
-      orElse: () => IterationApprovalStatus.pending,
+      orElse: () => IterationApprovalStatus.created,
     );
   }
 }

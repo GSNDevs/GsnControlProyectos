@@ -124,7 +124,7 @@ class ProjectsController {
         'name': iter['name'],
         'start_date': iter['start_date'],
         'end_date': iter['end_date'],
-        'client_approval_status': 'pending',
+        'client_approval_status': 'created',
       };
       final newIterIdStr = await iterService.createIteration(newIterData);
 

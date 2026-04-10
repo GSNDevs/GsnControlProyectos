@@ -794,6 +794,15 @@ class _MilestonesTab extends ConsumerWidget {
                             )
                           else if (iteration.clientApprovalStatus ==
                               IterationApprovalStatus.pending)
+                            const Chip(
+                              label: Text("Enviado al Cliente"),
+                              backgroundColor: Color(0xFFFEF3C7),
+                              labelStyle: TextStyle(
+                                color: Color(0xFFD97706),
+                                fontSize: 12,
+                              ),
+                            )
+                          else // created
                             OutlinedButton.icon(
                               onPressed: () {
                                 if (project.clientId == null) {
@@ -822,7 +831,7 @@ class _MilestonesTab extends ConsumerWidget {
                                   ),
                                 );
                               },
-                              icon: const Icon(Icons.check, size: 16),
+                              icon: const Icon(Icons.send, size: 16),
                               label: const Text("Solicitar Aprobación"),
                             ),
                           const SizedBox(width: 8),
@@ -1963,7 +1972,7 @@ void _showCreateIterationDialog(
                         'description': descCtrl.text,
                         'start_date': startDate?.toIso8601String(),
                         'end_date': endDate?.toIso8601String(),
-                        'client_approval_status': 'pending',
+                        'client_approval_status': 'created',
                       });
                   Navigator.pop(context);
                 },
@@ -3924,6 +3933,15 @@ class _ClientMilestonesTab extends ConsumerWidget {
                               backgroundColor: Color(0xFFFEF3C7),
                               labelStyle: TextStyle(
                                 color: Color(0xFFD97706),
+                                fontSize: 12,
+                              ),
+                            )
+                          else // created
+                            const Chip(
+                              label: Text("En Preparación"),
+                              backgroundColor: Color(0xFFF1F5F9),
+                              labelStyle: TextStyle(
+                                color: Color(0xFF64748B),
                                 fontSize: 12,
                               ),
                             ),

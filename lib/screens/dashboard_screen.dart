@@ -12,14 +12,13 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final projectsAsync = ref.watch(projectsProvider);
-    final profilesAsync = ref.watch(profilesProvider);
+    final clientCompaniesAsync = ref.watch(clientCompaniesProvider);
 
     String getClientName(String? clientId) {
       if (clientId == null) return 'Sin Cliente Asociado';
-      final profiles = profilesAsync.value ?? [];
+      final companies = clientCompaniesAsync.value ?? [];
       try {
-        return profiles.firstWhere((p) => p.id == clientId).fullName ??
-            'Sin Nombre';
+        return companies.firstWhere((p) => p.id == clientId).name;
       } catch (_) {
         return 'ID: ${clientId.substring(0, 6)}...';
       }

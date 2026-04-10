@@ -214,20 +214,19 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                             const SizedBox(height: 8),
                             Consumer(
                               builder: (context, ref, _) {
-                                final profilesAsync = ref.watch(
-                                  profilesProvider,
+                                final clientCompaniesAsync = ref.watch(
+                                  clientCompaniesProvider,
                                 );
                                 if (project.clientId == null) {
                                   return const SizedBox();
                                 }
-                                return profilesAsync.maybeWhen(
-                                  data: (profiles) {
+                                return clientCompaniesAsync.maybeWhen(
+                                  data: (companies) {
                                     try {
-                                      final p = profiles.firstWhere(
+                                      final p = companies.firstWhere(
                                         (p) => p.id == project.clientId,
                                       );
-                                      final clientName =
-                                          p.fullName ?? p.email ?? 'Sin Nombre';
+                                      final clientName = p.name;
                                       return Text(
                                         clientName,
                                         style: const TextStyle(
@@ -356,15 +355,14 @@ class _OverviewTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currencyFormat = NumberFormat.currency(locale: 'es_CL', symbol: '\$');
-    final profilesAsync = ref.watch(profilesProvider);
+    final clientCompaniesAsync = ref.watch(clientCompaniesProvider);
     final isClient = ref.watch(authProvider)?.role == 'client';
 
     String getClientName(String? clientId) {
       if (clientId == null) return 'N/A';
-      final profiles = profilesAsync.value ?? [];
+      final companies = clientCompaniesAsync.value ?? [];
       try {
-        return profiles.firstWhere((p) => p.id == clientId).fullName ??
-            'Sin Nombre';
+        return companies.firstWhere((p) => p.id == clientId).name;
       } catch (_) {
         return 'ID: ${clientId.substring(0, 6)}...';
       }

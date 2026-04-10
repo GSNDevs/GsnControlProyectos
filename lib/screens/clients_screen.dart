@@ -563,8 +563,9 @@ class ClientsScreen extends ConsumerWidget {
                                         try {
                                           final service = ref.read(profilesServiceProvider);
                                           await service.updateProfile(user.id, {'client_id': client.id});
-                                          ref.invalidate(profilesProvider);
+                                          
                                           if (ctx.mounted) {
+                                            ref.invalidate(profilesProvider);
                                             Navigator.pop(ctx);
                                             ScaffoldMessenger.of(ctx).showSnackBar(
                                               const SnackBar(content: Text("Usuario asignado exitosamente.")),
@@ -735,8 +736,8 @@ class ClientsScreen extends ConsumerWidget {
                     'client_id': client.id
                   });
 
-                  ref.invalidate(profilesProvider);
                   if (ctx.mounted) {
+                    ref.invalidate(profilesProvider);
                     Navigator.pop(ctx);
                     ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text("Usuario creado y vinculado.")));
                   }

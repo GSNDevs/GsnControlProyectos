@@ -15,3 +15,4 @@ export 'product_category.dart';
 export 'quote.dart';
 export 'project_member.dart';
 export 'user_document.dart';
+export 'client_company.dart';

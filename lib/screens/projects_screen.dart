@@ -13,14 +13,13 @@ class ProjectsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final projectsAsync = ref.watch(projectsProvider);
-    final profilesAsync = ref.watch(profilesProvider);
+    final clientCompaniesAsync = ref.watch(clientCompaniesProvider);
 
     String getClientName(String? clientId) {
-      if (clientId == null) return 'Sin Cliente Asociado';
-      final profiles = profilesAsync.value ?? [];
+      if (clientId == null) return 'Sin Empresa Asociada';
+      final companies = clientCompaniesAsync.value ?? [];
       try {
-        return profiles.firstWhere((p) => p.id == clientId).fullName ??
-            'Sin Nombre';
+        return companies.firstWhere((p) => p.id == clientId).name;
       } catch (_) {
         return 'ID: ${clientId.substring(0, 6)}...';
       }
@@ -367,7 +366,7 @@ class ProjectsScreen extends ConsumerWidget {
       context: context,
       builder: (context) => Consumer(
         builder: (context, ref, _) {
-          final clientsAsync = ref.watch(clientsProvider);
+          final clientsAsync = ref.watch(clientCompaniesProvider);
           final projectsAsync = ref.watch(projectsProvider);
 
           return StatefulBuilder(
@@ -405,14 +404,14 @@ class ProjectsScreen extends ConsumerWidget {
                           loading: () =>
                               const Center(child: CircularProgressIndicator()),
                           error: (err, stack) => Text(
-                            'Error cargando clientes: $err',
+                            'Error cargando empresas: $err',
                             style: const TextStyle(color: Colors.red),
                           ),
                           data: (clients) {
                             return DropdownButtonFormField<String>(
                               initialValue: selectedClientId,
                               decoration: InputDecoration(
-                                labelText: "Cliente",
+                                labelText: "Empresa Mandante",
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -423,9 +422,7 @@ class ProjectsScreen extends ConsumerWidget {
                                 return DropdownMenuItem(
                                   value: client.id,
                                   child: Text(
-                                    client.fullName ??
-                                        client.email ??
-                                        'Sin Nombre',
+                                    client.name,
                                   ),
                                 );
                               }).toList(),

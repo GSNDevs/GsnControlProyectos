@@ -8,6 +8,7 @@ import 'package:gsn_control_de_proyectos/screens/inventory_screen.dart';
 import 'package:gsn_control_de_proyectos/screens/login_screen.dart';
 import 'package:gsn_control_de_proyectos/screens/project_detail_screen.dart';
 import 'package:gsn_control_de_proyectos/screens/users_screen.dart';
+import 'package:gsn_control_de_proyectos/screens/clients_screen.dart';
 import 'package:gsn_control_de_proyectos/screens/client_portal_screen.dart';
 import 'package:gsn_control_de_proyectos/screens/portfolio_screen.dart';
 import 'package:gsn_control_de_proyectos/screens/client_quotes_screen.dart';
@@ -109,6 +110,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (location.startsWith('/projects')) title = "Proyectos";
           if (location.startsWith('/inventory')) title = "Inventario";
           if (location.startsWith('/users')) title = "Usuarios";
+          if (location.startsWith('/clients')) title = "Clientes";
           if (location.startsWith('/quotes')) title = "Cotizaciones";
 
           return ResponsiveScaffold(title: title, child: child);
@@ -138,6 +140,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/users',
             builder: (context, state) => const UsersScreen(),
+          ),
+          GoRoute(
+            path: '/clients',
+            builder: (context, state) => const ClientsScreen(),
           ),
           GoRoute(
             path: '/quotes',

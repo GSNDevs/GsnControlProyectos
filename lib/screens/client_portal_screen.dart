@@ -93,8 +93,16 @@ class ClientPortalScreen extends ConsumerWidget {
           child: Text('Error: $err', style: const TextStyle(color: Colors.red)),
         ),
         data: (allProjects) {
+          String? userClientId;
+          profilesAsync.whenData((profiles) {
+            try {
+              final currentProfile = profiles.firstWhere((p) => p.id == user?.id);
+              userClientId = currentProfile.clientId;
+            } catch (_) {}
+          });
+
           final myProjects = allProjects
-              .where((p) => p.clientId == user?.id)
+              .where((p) => p.clientId == userClientId && userClientId != null)
               .toList();
 
           if (myProjects.isEmpty) {

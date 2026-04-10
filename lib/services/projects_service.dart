@@ -7,14 +7,14 @@ class ProjectsService {
   Future<List<Map<String, dynamic>>> getProjects() async {
     return await _client
         .from(_tableName)
-        .select('*, project_details_physical(*), project_details_software(*)')
+        .select('*, clients(*), project_details_physical(*), project_details_software(*)')
         .order('created_at', ascending: false);
   }
 
   Future<Map<String, dynamic>?> getProjectById(String id) async {
     return await _client
         .from(_tableName)
-        .select('*, project_details_physical(*), project_details_software(*)')
+        .select('*, clients(*), project_details_physical(*), project_details_software(*)')
         .eq('id', id)
         .maybeSingle();
   }

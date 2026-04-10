@@ -436,6 +436,41 @@ class ProjectInventoryController {
 // ----------------------------------------
 // PROFILES / USERS
 // ----------------------------------------
+final clientCompaniesProvider = FutureProvider<List<ClientCompany>>((ref) async {
+  final service = ref.watch(clientsServiceProvider);
+  final data = await service.getClients();
+  return data.map((e) => ClientCompany.fromJson(e)).toList();
+});
+
+final clientCompaniesControllerProvider = Provider(
+  (ref) => ClientCompaniesController(ref),
+);
+
+class ClientCompaniesController {
+  final Ref ref;
+  ClientCompaniesController(this.ref);
+
+  Future<void> createClient(Map<String, dynamic> data) async {
+    final service = ref.read(clientsServiceProvider);
+    await service.createClient(data);
+    ref.invalidate(clientCompaniesProvider);
+  }
+
+  Future<void> updateClient(String id, Map<String, dynamic> updates) async {
+    final service = ref.read(clientsServiceProvider);
+    await service.updateClient(id, updates);
+    ref.invalidate(clientCompaniesProvider);
+    ref.invalidate(clientCompanyByIdProvider(id));
+  }
+}
+
+final clientCompanyByIdProvider = FutureProvider.family<ClientCompany?, String>((ref, id) async {
+  final service = ref.watch(clientsServiceProvider);
+  final data = await service.getClientById(id);
+  if (data == null) return null;
+  return ClientCompany.fromJson(data);
+});
+
 final clientsProvider = FutureProvider<List<Profile>>((ref) async {
   final service = ref.watch(profilesServiceProvider);
   final data = await service.getClients();

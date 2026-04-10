@@ -13,6 +13,7 @@ import 'package:gsn_control_de_proyectos/services/notifications_service.dart';
 import 'package:gsn_control_de_proyectos/services/quotes_service.dart';
 import 'package:gsn_control_de_proyectos/services/project_members_service.dart';
 import 'package:gsn_control_de_proyectos/services/user_documents_service.dart';
+import 'package:gsn_control_de_proyectos/services/clients_service.dart';
 
 final notificationsServiceProvider = Provider((ref) => NotificationsService());
 
@@ -45,4 +46,8 @@ final projectMembersServiceProvider = Provider(
 
 final userDocumentsServiceProvider = Provider(
   (ref) => UserDocumentsService(),
+);
+
+final clientsServiceProvider = Provider(
+  (ref) => ClientsService(),
 );

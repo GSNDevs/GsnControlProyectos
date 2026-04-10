@@ -128,6 +128,12 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                         route: '/users',
                       ),
                       _SidebarItem(
+                        icon: Icons.business_rounded,
+                        label: "Clientes",
+                        isOpen: _isSidebarOpen,
+                        route: '/clients',
+                      ),
+                      _SidebarItem(
                         icon: Icons.request_quote_rounded,
                         label: "Cotizaciones",
                         isOpen: _isSidebarOpen,

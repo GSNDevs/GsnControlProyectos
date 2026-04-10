@@ -8,6 +8,7 @@ class Profile {
   final String? companyName;
   final String? fantasyName;
   final String? address;
+  final String? clientId; // Nuevo campo para vincular a empresa cliente
   final bool enabled;
   final DateTime createdAt;
 
@@ -21,6 +22,7 @@ class Profile {
     this.companyName,
     this.fantasyName,
     this.address,
+    this.clientId,
     this.enabled = true,
     required this.createdAt,
   });
@@ -36,6 +38,7 @@ class Profile {
       companyName: json['company_name'],
       fantasyName: json['fantasy_name'],
       address: json['address'],
+      clientId: json['client_id'],
       enabled: json['enabled'] ?? true,
       createdAt: DateTime.parse(json['created_at']),
     );
@@ -52,6 +55,7 @@ class Profile {
       'company_name': companyName,
       'fantasy_name': fantasyName,
       'address': address,
+      'client_id': clientId,
       'enabled': enabled,
       'created_at': createdAt.toIso8601String(),
     };

@@ -1,5 +1,6 @@
 import 'package:gsn_control_de_proyectos/models/project_details_physical.dart';
 import 'package:gsn_control_de_proyectos/models/project_details_software.dart';
+import 'package:gsn_control_de_proyectos/models/client_company.dart';
 
 enum ProjectType { physical, software, hybrid }
 
@@ -27,6 +28,7 @@ class Project {
   final DateTime? updatedAt;
 
   // Optional joined details
+  final ClientCompany? clientCompany;
   final ProjectDetailsPhysical? detailsPhysical;
   final ProjectDetailsSoftware? detailsSoftware;
 
@@ -49,6 +51,7 @@ class Project {
     this.tentativeEndDate,
     this.createdAt,
     this.updatedAt,
+    this.clientCompany,
     this.detailsPhysical,
     this.detailsSoftware,
   });
@@ -78,6 +81,9 @@ class Project {
           : null,
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'])
+          : null,
+      clientCompany: json['clients'] != null
+          ? ClientCompany.fromJson(json['clients'])
           : null,
       detailsPhysical: json['project_details_physical'] != null
           ? ProjectDetailsPhysical.fromJson(json['project_details_physical'])

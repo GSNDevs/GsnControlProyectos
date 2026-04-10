@@ -473,75 +473,122 @@ class ClientsScreen extends ConsumerWidget {
   }
 
   void _showAddClientUserDialog(BuildContext context, WidgetRef ref, ClientCompany client) {
+    String searchQuery = '';
+    
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text("Asignar Usuario a ${client.name}"),
         content: SizedBox(
           width: 500,
-          child: Consumer(
-            builder: (context, ref, child) {
-              final usersAsync = ref.watch(profilesProvider);
-              return usersAsync.when(
-                data: (profiles) {
-                  // Filtrar usuarios que tienen rol client y que no están ya asignados a esta empresa
-                  final availableUsers = profiles.where((p) => p.role == 'client' && p.clientId != client.id).toList();
-                  
-                  if (availableUsers.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text("No hay usuarios con rol 'client' disponibles para asignar."),
-                    );
-                  }
-
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        "Selecciona un usuario de la lista vinculada a este sistema con rol 'Cliente'. Si el usuario ya estaba en otra empresa, será transferido a esta.",
-                        style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                      ),
-                      const SizedBox(height: 16),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 300),
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          itemCount: availableUsers.length,
-                          separatorBuilder: (_, __) => const Divider(),
-                          itemBuilder: (context, index) {
-                            final user = availableUsers[index];
-                            return ListTile(
-                              title: Text(user.fullName ?? 'Sin Nombre'),
-                              subtitle: Text(user.email ?? ''),
-                              trailing: ElevatedButton(
-                                onPressed: () async {
-                                  try {
-                                    final service = ref.read(profilesServiceProvider);
-                                    await service.updateProfile(user.id, {'client_id': client.id});
-                                    ref.invalidate(profilesProvider);
-                                    if (ctx.mounted) {
-                                      Navigator.pop(ctx);
-                                      ScaffoldMessenger.of(ctx).showSnackBar(
-                                        const SnackBar(content: Text("Usuario asignado exitosamente.")),
-                                      );
-                                    }
-                                  } catch (e) {
-                                    if (ctx.mounted) {
-                                      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text("Error: $e")));
-                                    }
-                                  }
-                                },
-                                child: const Text("Asignar"),
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              return Consumer(
+                builder: (context, ref, child) {
+                  final usersAsync = ref.watch(profilesProvider);
+                  return usersAsync.when(
+                    data: (profiles) {
+                      // Filtrar usuarios que tienen rol client y que no están ya asignados a esta empresa
+                      var availableUsers = profiles.where((p) => p.role == 'client' && p.clientId != client.id).toList();
+                      
+                      if (searchQuery.isNotEmpty) {
+                        final q = searchQuery.toLowerCase();
+                        availableUsers = availableUsers.where((p) => 
+                          (p.fullName?.toLowerCase().contains(q) ?? false) || 
+                          (p.email?.toLowerCase().contains(q) ?? false)
+                        ).toList();
+                      }
+                      
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            "Selecciona un usuario de la lista vinculada a este sistema con rol 'Cliente'. Si el usuario ya estaba en otra empresa, será transferido a esta.",
+                            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            decoration: InputDecoration(
+                              labelText: "Buscar por nombre o correo",
+                              prefixIcon: const Icon(Icons.search_rounded),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            ),
+                            onChanged: (val) {
+                              setState(() {
+                                searchQuery = val;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          if (profiles.where((p) => p.role == 'client' && p.clientId != client.id).isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                children: [
+                                  const Text("No hay usuarios con rol 'client' disponibles en el sistema."),
+                                  const SizedBox(height: 16),
+                                  OutlinedButton.icon(
+                                    onPressed: () {
+                                      Navigator.pop(ctx);
+                                      _showCreateClientUserSubDialog(context, ref, client);
+                                    },
+                                    icon: const Icon(Icons.person_add_alt_1_rounded),
+                                    label: const Text("Crear nuevo usuario"),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else if (availableUsers.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: Text("No se encontraron usuarios coincidentes."),
+                            )
+                          else
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxHeight: 300),
+                              child: ListView.separated(
+                                shrinkWrap: true,
+                                itemCount: availableUsers.length,
+                                separatorBuilder: (_, __) => const Divider(),
+                                itemBuilder: (context, index) {
+                                  final user = availableUsers[index];
+                                  return ListTile(
+                                    title: Text(user.fullName ?? 'Sin Nombre'),
+                                    subtitle: Text(user.email ?? ''),
+                                    trailing: ElevatedButton(
+                                      onPressed: () async {
+                                        try {
+                                          final service = ref.read(profilesServiceProvider);
+                                          await service.updateProfile(user.id, {'client_id': client.id});
+                                          ref.invalidate(profilesProvider);
+                                          if (ctx.mounted) {
+                                            Navigator.pop(ctx);
+                                            ScaffoldMessenger.of(ctx).showSnackBar(
+                                              const SnackBar(content: Text("Usuario asignado exitosamente.")),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          if (ctx.mounted) {
+                                            ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text("Error: $e")));
+                                          }
+                                        }
+                                      },
+                                      child: const Text("Asignar"),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (err, _) => Center(child: Text("Error: $err")),
                   );
                 },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, _) => Center(child: Text("Error: $err")),
               );
             },
           ),
@@ -594,6 +641,113 @@ class ClientsScreen extends ConsumerWidget {
               }
             },
             child: const Text("Eliminar", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCreateClientUserSubDialog(BuildContext context, WidgetRef ref, ClientCompany client) {
+    final emailCtrl = TextEditingController();
+    final passCtrl = TextEditingController();
+    final nameCtrl = TextEditingController();
+    final rutCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("Nuevo Usuario para ${client.name}"),
+        content: SizedBox(
+          width: 400,
+          child: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.gsnBlue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      "Se creará un usuario con rol Cliente vinculado automáticamente a esta empresa.",
+                      style: TextStyle(color: AppColors.gsnBlue, fontSize: 13),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: emailCtrl,
+                    decoration: const InputDecoration(labelText: "Email (Login)", border: OutlineInputBorder()),
+                    validator: (v) => v!.isEmpty || !v.contains('@') ? 'Email inválido' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: passCtrl,
+                    decoration: const InputDecoration(labelText: "Contraseña Temporal", border: OutlineInputBorder()),
+                    obscureText: true,
+                    validator: (v) => v!.length < 6 ? 'Mínimo 6 caracteres' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(labelText: "Nombre Completo", border: OutlineInputBorder()),
+                    validator: (v) => v!.isEmpty ? 'Campo requerido' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: rutCtrl,
+                    decoration: const InputDecoration(labelText: "RUT Personal", border: OutlineInputBorder()),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                try {
+                  final service = ref.read(profilesServiceProvider);
+                  // 1. Create auth user and profile
+                  await service.createProfileWithAuth({
+                    'email': emailCtrl.text,
+                    'password': passCtrl.text,
+                    'full_name': nameCtrl.text,
+                    'rut': rutCtrl.text,
+                  }, 'client');
+                  
+                  // Now how to link? We need the user's ID.
+                  // Since we don't have the user ID back from RPC, we fetch the profile by email
+                  final allProfiles = await service.getProfiles();
+                  final newProfile = allProfiles.firstWhere((p) => p['email'] == emailCtrl.text);
+                  
+                  // Link it
+                  await service.updateProfile(newProfile['id'], {
+                    'client_id': client.id
+                  });
+
+                  ref.invalidate(profilesProvider);
+                  if (ctx.mounted) {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text("Usuario creado y vinculado.")));
+                  }
+                } catch (e) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text("Error: $e")));
+                  }
+                }
+              }
+            },
+            child: const Text("Crear"),
           ),
         ],
       ),
